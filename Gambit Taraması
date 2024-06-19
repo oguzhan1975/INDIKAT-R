@@ -1,0 +1,439 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © semihtat7
+
+//@version=5
+indicator("Gambit Taraması",overlay = true)
+
+
+sektorsec = input.string(defval='ARACI KURUMLAR', options=['ARACI KURUMLAR', 'BANKACILIK', 'ÇİMENTO', 'DAYANIKLI TÜKETİM', 'DEMİR/ÇELİK','ENERJİ','TEÇHİZAT/TEKSTİL','GIDA','GAYRİMENKUL','HOLDİNGLER','İLETİŞİM','İNŞAAT MALZEMELERİ','KAĞIT ÜRÜNLERİ',"OTOMOTİV/PARÇA",'PERAKANDE/TİCARET'], group='Sektör Seçimi', title='Sektör Seçimi')
+per = input.timeframe(defval='', title='PERİYOT',group = "İncelemek istediğiniz zaman aralığını belirleyin.")
+
+/////////////////////////////////////// BU ALANA TARAMA YAPMAK İSTEDİĞİNİZ İNDİKATÖRÜN KODLARINI YAZIN 
+
+wma9 = ta.wma(close, 9)
+wma15 =ta.wma(close, 15)
+
+
+
+plot(wma9, color=color.green, linewidth=1, title="WMA 9")
+
+plot(wma15, color=color.red, linewidth=1, title="WMA 15")
+
+ ////////// WMA 9-15 TARAMA///////////////////////////////////////////////
+
+
+
+func() =>
+        
+    cond = close > wma15 and close < wma9   /// koşul kısmı burası örneğin macd taraması için ta.crossover(macd,signal) yazın 
+    [close,cond]
+
+
+c1 = input.symbol(title='1', defval='BIST:A1CAP',group = "ARACI KURUMLAR")
+c2 = input.symbol(title='2', defval='BIST:BRKVY')
+c3 = input.symbol(title='3', defval='BIST:GEDIK')
+c4 = input.symbol(title='4', defval='BIST:GLBMD')
+c5 = input.symbol(title='5', defval='BIST:GLCVY')
+c6 = input.symbol(title='6', defval='BIST:INFO')
+c7 = input.symbol(title='7', defval='BIST:ISMEN')
+c8 = input.symbol(title='8', defval='BIST:OSMEN')
+c9 = input.symbol(title='9', defval='BIST:OYYAT')
+c10 = input.symbol(title='10', defval='BIST:SKYMD')
+c11 = input.symbol(title='11', defval='BIST:TERA')
+c12 = input.symbol(title='12', defval='BIST:UNLU')/////////////////////////
+c13 = input.symbol(title='13', defval="")
+c14 = input.symbol(title='14', defval='')
+c15 = input.symbol(title='15', defval='')
+c16 = input.symbol(title='16', defval='')
+c17 = input.symbol(title='17', defval='')
+c18 = input.symbol(title='18', defval='')
+c19 = input.symbol(title='19', defval='')
+c20 = input.symbol(title='20', defval='')
+
+d1 = input.symbol(title='1', defval='BIST:AKBNK',group = "BANKACILIK")
+d2 = input.symbol(title='2', defval='BIST:ALBRK')
+d3 = input.symbol(title='3', defval='BIST:GARAN')
+d4 = input.symbol(title='4', defval='BIST:HALKB')
+d5 = input.symbol(title='5', defval='BIST:ICBCT')
+d6 = input.symbol(title='6', defval='BIST:ISATR')
+d7 = input.symbol(title='7', defval='BIST:ISBTR')
+d8 = input.symbol(title='8', defval='BIST:ISCTR')
+d9 = input.symbol(title='9', defval='BIST:ISKUR')
+d10 = input.symbol(title='10', defval='BIST:KLNMA')
+d11 = input.symbol(title='11', defval='BIST:QNBFB')
+d12 = input.symbol(title='12', defval='BIST:SKBNK')
+d13 = input.symbol(title='13', defval='BIST:TSKB')
+d14 = input.symbol(title='14', defval='BIST:VAKBN')
+d15 = input.symbol(title='15', defval='BIST:YKBNK')
+d16 = input.symbol(title='16', defval='')
+d17 = input.symbol(title='17', defval='')
+d18 = input.symbol(title='18', defval='')
+d19 = input.symbol(title='19', defval='')
+d20 = input.symbol(title='20', defval='')
+
+e1 = input.symbol(title='1', defval='BIST:AFYON',group = "ÇİMENTO")
+e2 = input.symbol(title='2', defval='BIST:AKCNS')
+e3 = input.symbol(title='3', defval='BIST:BASCM')
+e4 = input.symbol(title='4', defval='BIST:BOBET')
+e5 = input.symbol(title='5', defval='BIST:BSOKE')
+e6 = input.symbol(title='6', defval='BIST:BTCIM')
+e7 = input.symbol(title='7', defval='BIST:BUCIM')
+e8 = input.symbol(title='8', defval='BIST:CIMSA')
+e9 = input.symbol(title='9', defval='BIST:CMBTN')
+e10 = input.symbol(title='10', defval='BIST:CMENT')
+e11 = input.symbol(title='11', defval='BIST:GOLTS')
+e12 = input.symbol(title='12', defval='BIST:KONYA')
+e13 = input.symbol(title='13', defval='BIST:NIBAS')
+e14 = input.symbol(title='14', defval='')
+e15 = input.symbol(title='15', defval='')
+e16 = input.symbol(title='16', defval='')
+e17 = input.symbol(title='17', defval="")
+e18 = input.symbol(title='18', defval='')
+e19 = input.symbol(title='19', defval='')
+e20 = input.symbol(title='20', defval='')
+
+f1 = input.symbol(title='1', defval='BIST:ALCAR',group = "DAYANIKLI TÜKETİM")
+f2 = input.symbol(title='2', defval='BIST:ARCLK')
+f3 = input.symbol(title='3', defval='BIST:ARZUM')
+f4 = input.symbol(title='4', defval='BIST:BRLSM')
+f5 = input.symbol(title='5', defval='BIST:IHEVA')
+f6 = input.symbol(title='6', defval='BIST:KLMSN')
+f7 = input.symbol(title='7', defval='BIST:SAFKR')
+f8 = input.symbol(title='8', defval='BIST:SNICA')
+f9 = input.symbol(title='9', defval='BIST:VESBE')
+f10 = input.symbol(title='10', defval='BIST:VESTL')
+f11 = input.symbol(title='11', defval='BIST:DYOBY')
+f12 = input.symbol(title='12', defval='BIST:MRSHL')
+f13 = input.symbol(title='13', defval='BIST:KONKA')
+f14 = input.symbol(title='14', defval='BIST:UZERB')
+f15 = input.symbol(title='15', defval='')
+f16 = input.symbol(title='16', defval='')
+f17 = input.symbol(title='17', defval='')
+f18 = input.symbol(title='18', defval='')
+f19 = input.symbol(title='19', defval='')
+f20 = input.symbol(title='20', defval='')
+
+g1 = input.symbol(title='1', defval='BIST:BMSCH',group = "DEMİR/ÇELİK")
+g2 = input.symbol(title='2', defval='BIST:BMSTL')
+g3 = input.symbol(title='3', defval='BIST:BURCE')
+g4 = input.symbol(title='4', defval='BIST:CEMAS')
+g5 = input.symbol(title='5', defval='BIST:CUSAN')
+g6 = input.symbol(title='6', defval='BIST:DMSAS')
+g7 = input.symbol(title='7', defval='BIST:ERBOS')
+g8 = input.symbol(title='8', defval='BIST:EUREN')
+g9 = input.symbol(title='9', defval='BIST:BRSAN')
+g10 = input.symbol(title='10', defval='BIST:CELHA')
+g11 = input.symbol(title='11', defval='BIST:CEMTS')
+g12 = input.symbol(title='12', defval='BIST:EREGL')
+g13 = input.symbol(title='13', defval='BIST:ISDMR')
+g14 = input.symbol(title='14', defval='BIST:KRDMA')
+g15 = input.symbol(title='15', defval='BIST:KRDMB')
+g16 = input.symbol(title='16', defval='BIST:YKSLN')
+g17 = input.symbol(title='17', defval='BIST:ERCB')
+g18 = input.symbol(title='18', defval='KOZAL')
+g19 = input.symbol(title='19', defval='KOZAA')
+g20 = input.symbol(title='20', defval='ALMAD')
+
+h1 = input.symbol(title='1', defval='BIST:ODAS',group = "ENERJİ")
+h2 = input.symbol(title='2', defval='BIST:ESEN')
+h3 = input.symbol(title='3', defval='BIST:IZENR')
+h4 = input.symbol(title='4', defval='BIST:ENERY')
+h5 = input.symbol(title='5', defval='BIST:ENJSA')
+h6 = input.symbol(title='6', defval='BIST:ALFAS')
+h7 = input.symbol(title='7', defval='BIST:ASTOR	')
+h8 = input.symbol(title='8', defval='BIST:CWENE')
+h9 = input.symbol(title='9', defval='BIST:EMKEL')
+h10 = input.symbol(title='10', defval='BIST:EUPWR	')
+h11 = input.symbol(title='11', defval='BIST:GESAN')
+h12 = input.symbol(title='12', defval='BIST:KONTR')
+h13 = input.symbol(title='13', defval='BIST:SMRTG')
+h14 = input.symbol(title='14', defval='BIST:MAGEN')
+h15 = input.symbol(title='15', defval='BIST:NATEN')
+h16 = input.symbol(title='16', defval='BIST:ORGE')
+h17 = input.symbol(title='17', defval='BIST:SUNTK')
+h18 = input.symbol(title='18', defval='BIST:SUWEN')
+h19 = input.symbol(title='19', defval='BIST:AKENR')
+h20 = input.symbol(title='20', defval='BIST:AKSEN')
+
+j1 = input.symbol(title='1', defval='BIST:EKOS',group = "TEÇHİZAT/TEKSTİL")
+j2 = input.symbol(title='2', defval='BIST:HKTM')
+j3 = input.symbol(title='3', defval='BIST:IMASM')
+j4 = input.symbol(title='4', defval='BIST:MAKIM')
+j5 = input.symbol(title='5', defval='BIST:SANEL')
+j6 = input.symbol(title='6', defval='BIST:SILVR')
+j7 = input.symbol(title='7', defval='BIST:AKSA')
+j8 = input.symbol(title='8', defval='BIST:KOPOL')
+j9 = input.symbol(title='9', defval='BIST:KORDS')
+j10 = input.symbol(title='10', defval='BIST:XU100')
+j11 = input.symbol(title='11', defval='BIST:SASA')
+j12 = input.symbol(title='12', defval='')
+j13 = input.symbol(title='13', defval='')
+j14 = input.symbol(title='14', defval='')
+j15 = input.symbol(title='15', defval='')
+j16 = input.symbol(title='16', defval='')
+j17 = input.symbol(title='17', defval='')
+j18 = input.symbol(title='18', defval='')
+j19 = input.symbol(title='19', defval='')
+j20 = input.symbol(title='20', defval='')
+
+
+k1 = input.symbol(title='1', defval='BIST:ATAKP',group = "GIDA")
+k2 = input.symbol(title='2', defval='BIST:AVOD')
+k3 = input.symbol(title='3', defval='BIST:BIGCH')
+k4 = input.symbol(title='4', defval='BIST:BYDNR')
+k5 = input.symbol(title='5', defval='BIST:DARDL')
+k6 = input.symbol(title='6', defval='BIST:DMRGD')
+k7 = input.symbol(title='7', defval='BIST:EKIZ')
+k8 = input.symbol(title='8', defval='BIST:EKSUN')
+k9 = input.symbol(title='9', defval='BIST:ELITE')
+k10 = input.symbol(title='10', defval='BIST:ETILR')
+k11 = input.symbol(title='11', defval='BIST:FADE')
+k12 = input.symbol(title='12', defval='BIST:FRIGO')
+k13 = input.symbol(title='13', defval='')
+k14 = input.symbol(title='14', defval='')
+k15 = input.symbol(title='15', defval='')
+k16 = input.symbol(title='16', defval='')
+k17 = input.symbol(title='17', defval='')
+k18 = input.symbol(title='18', defval='')
+k19 = input.symbol(title='19', defval='')
+k20 = input.symbol(title='20', defval='')
+
+
+l1 = input.symbol(title='1', defval='BIST:ADGYO',group = "GAYRİMENKUL")
+l2 = input.symbol(title='2', defval='BIST:AGYO')
+l3 = input.symbol(title='3', defval='BIST:AKFGY')
+l4 = input.symbol(title='4', defval='BIST:AKMGY')
+l5 = input.symbol(title='5', defval='BIST:AKSGY')
+l6 = input.symbol(title='6', defval='BIST:ALGYO')
+l7 = input.symbol(title='7', defval='BIST:ASGYO')
+l8 = input.symbol(title='8', defval='BIST:ATAGY')
+l9 = input.symbol(title='9', defval='BIST:AVGYO')
+l10 = input.symbol(title='10', defval='BIST:AVPGY')
+l11 = input.symbol(title='11', defval='BIST:BEGYO')
+l12 = input.symbol(title='12', defval='BIST:DAPGM')
+l13 = input.symbol(title='13', defval='BIST:DGGYO')
+l14 = input.symbol(title='14', defval='BIST:DZGYO')
+l15 = input.symbol(title='15', defval='BIST:EKGYO')
+l16 = input.symbol(title='16', defval='BIST:ISGYO')
+l17 = input.symbol(title='17', defval='BIST:TURGG')
+l18 = input.symbol(title='18', defval='BIST:VRGYO')
+l19 = input.symbol(title='19', defval='BIST:ZRGYO')
+l20 = input.symbol(title='20', defval='BIST:ZRGYO')
+
+
+m1 = input.symbol(title='1', defval='BIST:AGHOL',group = "HOLDİNGLER")
+m2 = input.symbol(title='2', defval='BIST:AKYHO')
+m3 = input.symbol(title='3', defval='BIST:ALARK')
+m4 = input.symbol(title='4', defval='BIST:ATSYH')
+m5 = input.symbol(title='5', defval='BIST:AVHOL')
+m6 = input.symbol(title='6', defval='BIST:BERA')
+m7 = input.symbol(title='7', defval='BIST:BINHO')
+m8 = input.symbol(title='8', defval='BIST:ATAGY')
+m9 = input.symbol(title='9', defval='BIST:AVGYO')
+m10 = input.symbol(title='10', defval='BIST:BRYAT')
+m11 = input.symbol(title='11', defval='BIST:COSMO')
+m12 = input.symbol(title='12', defval='BIST:DAGHL')
+m13 = input.symbol(title='13', defval='BIST:DOHOL')
+m14 = input.symbol(title='14', defval='BIST:ECZYT')
+m15 = input.symbol(title='15', defval='BIST:KCHOL')
+m16 = input.symbol(title='16', defval='BIST:SAHOL')
+m17 = input.symbol(title='17', defval='BIST:ISBIR')
+m18 = input.symbol(title='18', defval='BIST:INVEO')
+m19 = input.symbol(title='19', defval='BIST:IHLAS')
+m20 = input.symbol(title='20', defval='BIST:HEDEF')
+
+
+
+n1 = input.symbol(title='1', defval='BIST:KRONT',group = "İLETİŞİM")
+n2 = input.symbol(title='2', defval='BIST:MANAS')
+n3 = input.symbol(title='3', defval='BIST:MOBTL')
+n4 = input.symbol(title='4', defval='BIST:ATSYH')
+n5 = input.symbol(title='5', defval='BIST:TCELL')
+n6 = input.symbol(title='6', defval='BIST:TTKOM')
+n7 = input.symbol(title='7', defval='BIST:ALCTL')
+n8 = input.symbol(title='8', defval='BIST:KAREL')
+n9 = input.symbol(title='9', defval='BIST:NETAS')
+n10 = input.symbol(title='10', defval='BIST:REEDR')
+n11 = input.symbol(title='11', defval='')
+n12 = input.symbol(title='12', defval='')
+n13 = input.symbol(title='13', defval='')
+n14 = input.symbol(title='14', defval='')
+n15 = input.symbol(title='15', defval='')
+n16 = input.symbol(title='16', defval='')
+n17 = input.symbol(title='17', defval='')
+n18 = input.symbol(title='18', defval='')
+n19 = input.symbol(title='19', defval='')
+n20 = input.symbol(title='20', defval='')
+
+o1 = input.symbol(title='1', defval='BIST:ANELE',group = "İNŞAAT MALZEMELERİ")
+o2 = input.symbol(title='2', defval='BIST:AYES')
+o3 = input.symbol(title='3', defval='BIST:BRKSN')
+o4 = input.symbol(title='4', defval='BIST:BURVA')
+o5 = input.symbol(title='5', defval='BIST:BVSAN')
+o6 = input.symbol(title='6', defval='BIST:DOGUB')
+o7 = input.symbol(title='7', defval='BIST:EGPRO')
+o8 = input.symbol(title='8', defval='BIST:EPLAS')
+o9 = input.symbol(title='9', defval='BIST:FORMT')
+o10 = input.symbol(title='10', defval='BIST:INTEM')
+o11 = input.symbol(title='11', defval='KBORU')
+o12 = input.symbol(title='12', defval='MAKTK')
+o13 = input.symbol(title='13', defval='MEGMT')
+o14 = input.symbol(title='14', defval='MEKAG')
+o15 = input.symbol(title='15', defval='MZHLD')
+o16 = input.symbol(title='16', defval='PNLSN')
+o17 = input.symbol(title='17', defval='QUAGR')
+o18 = input.symbol(title='18', defval='SARKY')
+o19 = input.symbol(title='19', defval='YBTAS')
+o20 = input.symbol(title='20', defval='')
+
+p1 = input.symbol(title='1', defval='BIST:ALKA',group = "KAĞIT ÜRÜNLERİ")
+p2 = input.symbol(title='2', defval='BIST:BAKAB')
+p3 = input.symbol(title='3', defval='BIST:BARMA')
+p4 = input.symbol(title='4', defval='BIST:DURDO')
+p5 = input.symbol(title='5', defval='BIST:KAPLM')
+p6 = input.symbol(title='6', defval='BIST:KARTN')
+p7 = input.symbol(title='7', defval='BIST:KONKA')
+p8 = input.symbol(title='8', defval='BIST:KRPLS')
+p9 = input.symbol(title='9', defval='BIST:MNDTR')
+p10 = input.symbol(title='10', defval='BIST:ORMA')
+p11 = input.symbol(title='11', defval='PRZMA')
+p12 = input.symbol(title='12', defval='SAMAT')
+p13 = input.symbol(title='13', defval='TEZOL')
+p14 = input.symbol(title='14', defval='VKING')
+p15 = input.symbol(title='15', defval='ADEL')
+p16 = input.symbol(title='16', defval='GIPTA')
+p17 = input.symbol(title='17', defval='')
+p18 = input.symbol(title='18', defval='')
+p19 = input.symbol(title='19', defval='')
+p20 = input.symbol(title='20', defval='')
+
+
+T1 = input.symbol(title='1', defval='BIST:ASUZU',group = "OTOMOTİV/PARÇA")
+T2 = input.symbol(title='2', defval='BIST:DOAS')
+T3 = input.symbol(title='3', defval='BIST:FROTO')
+T4 = input.symbol(title='4', defval='BIST:KARSN')
+T5 = input.symbol(title='5', defval='BIST:OTKAR')
+T6 = input.symbol(title='6', defval='BIST:TMSN')
+T7 = input.symbol(title='7', defval='BIST:TOASO')
+T8 = input.symbol(title='8', defval='BIST:TTRAK')
+T9 = input.symbol(title='9', defval='BIST:BRISA')
+T10 = input.symbol(title='10', defval='BIST:GOODY')
+T11 = input.symbol(title='11', defval='BALAT')
+T12 = input.symbol(title='12', defval='BFREN')
+T13 = input.symbol(title='13', defval='DITAS')
+T14 = input.symbol(title='14', defval='EGEEN')
+T15 = input.symbol(title='15', defval='FMIZP')
+T16 = input.symbol(title='16', defval='JANTS')
+T17 = input.symbol(title='17', defval='KATMR')
+T18 = input.symbol(title='18', defval='PARSN')
+T19 = input.symbol(title='19', defval='TUCLK')
+T20 = input.symbol(title='20', defval='')
+
+t1 = input.symbol(title='1', defval='BIST:ADESE',group = "PERAKANDE/TİCARET")
+t2 = input.symbol(title='2', defval = '')
+t3 = input.symbol(title='3', defval='BIST:BIMAS')
+t4 = input.symbol(title='4', defval='BIST:BIZIM')
+t5 = input.symbol(title='5', defval='BIST:CRFSA	')
+t6 = input.symbol(title='6', defval='BIST:EBEBK')
+t7 = input.symbol(title='7', defval='BIST:GMTAS')
+t8 = input.symbol(title='8', defval='BIST:GRTRK')
+t9 = input.symbol(title='9', defval='BIST:KIMMR	')
+t10 = input.symbol(title='10', defval='BIST:MGROS	')
+t11 = input.symbol(title='11', defval='SOKM')
+t12 = input.symbol(title='12', defval='TKNSA')
+t13 = input.symbol(title='13', defval='VAKKO')
+t14 = input.symbol(title='14', defval='CCOLA')
+t15 = input.symbol(title='15', defval='AEFES')
+t16 = input.symbol(title='16', defval='PINSU')
+t17 = input.symbol(title='17', defval='KNFRT')
+t18 = input.symbol(title='18', defval='PARSN')
+t19 = input.symbol(title='19', defval='TBORG')
+t20 = input.symbol(title='20', defval='')
+
+
+
+a1 = sektorsec == 'ARACI KURUMLAR' ? c1 : sektorsec == 'BANKACILIK' ? d1 : sektorsec == 'ÇİMENTO' ? e1 : sektorsec == 'DAYANIKLI TÜKETİM' ? f1 : sektorsec == 'DEMİR/ÇELİK' ? g1 : sektorsec == 'ENERJİ' ? h1 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j1 :sektorsec == 'GIDA' ? k1:sektorsec == 'GAYRİMENKUL' ? l1:sektorsec == 'HOLDİNGLER' ? m1:sektorsec == 'İLETİŞİM' ? n1 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o1 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o1:sektorsec == 'OTOMOTİV/PARÇA' ? T1:sektorsec == 'PERAKANDE/TİCARET' ? t1: na
+a2 = sektorsec == 'ARACI KURUMLAR' ? c2 : sektorsec == 'BANKACILIK' ? d2 : sektorsec == 'ÇİMENTO' ? e2 : sektorsec == 'DAYANIKLI TÜKETİM' ? f2 : sektorsec == 'DEMİR/ÇELİK' ? g2 : sektorsec == 'ENERJİ' ? h2 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j2 : sektorsec == 'GIDA' ? k2:sektorsec == 'GAYRİMENKUL' ? l2:sektorsec == 'HOLDİNGLER' ? m2:sektorsec == 'İLETİŞİM' ? n2 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o2 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o2:sektorsec == 'OTOMOTİV/PARÇA' ?T2:sektorsec == 'PERAKANDE/TİCARET' ?t2:na
+a3 = sektorsec == 'ARACI KURUMLAR' ? c3 : sektorsec == 'BANKACILIK' ? d3 : sektorsec == 'ÇİMENTO' ? e3 : sektorsec == 'DAYANIKLI TÜKETİM' ? f3 : sektorsec == 'DEMİR/ÇELİK' ? g3 : sektorsec == 'ENERJİ' ? h3 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j3 : sektorsec == 'GIDA' ? k3:sektorsec == 'GAYRİMENKUL' ? l3:sektorsec == 'HOLDİNGLER' ? m3:sektorsec == 'İLETİŞİM' ? n3 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o3 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o3:sektorsec == 'OTOMOTİV/PARÇA' ?T3:sektorsec == 'PERAKANDE/TİCARET' ?t3:na
+a4 = sektorsec == 'ARACI KURUMLAR' ? c4 : sektorsec == 'BANKACILIK' ? d4 : sektorsec == 'ÇİMENTO' ? e4 : sektorsec == 'DAYANIKLI TÜKETİM' ? f4 : sektorsec == 'DEMİR/ÇELİK' ? g4 : sektorsec == 'ENERJİ' ? h4 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j4 : sektorsec == 'GIDA' ? k4:sektorsec == 'GAYRİMENKUL' ? l4:sektorsec == 'HOLDİNGLER' ? m4:sektorsec == 'İLETİŞİM' ? n4 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o4 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o4:sektorsec == 'OTOMOTİV/PARÇA' ?T4:sektorsec == 'PERAKANDE/TİCARET' ?t4:na
+a5 = sektorsec == 'ARACI KURUMLAR' ? c5 : sektorsec == 'BANKACILIK' ? d5 : sektorsec == 'ÇİMENTO' ? e5 : sektorsec == 'DAYANIKLI TÜKETİM' ? f5 : sektorsec == 'DEMİR/ÇELİK' ? g5 : sektorsec == 'ENERJİ' ? h5 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j5 : sektorsec == 'GIDA' ? k5:sektorsec == 'GAYRİMENKUL' ? l5:sektorsec == 'HOLDİNGLER' ? m5:sektorsec == 'İLETİŞİM' ? n5 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o5 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o5:sektorsec == 'OTOMOTİV/PARÇA' ?T5:sektorsec == 'PERAKANDE/TİCARET' ?t5:na
+a6 = sektorsec == 'ARACI KURUMLAR' ? c6 : sektorsec == 'BANKACILIK' ? d6 : sektorsec == 'ÇİMENTO' ? e6 : sektorsec == 'DAYANIKLI TÜKETİM' ? f6 : sektorsec == 'DEMİR/ÇELİK' ? g6 : sektorsec == 'ENERJİ' ? h6 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j6 : sektorsec == 'GIDA' ? k6:sektorsec == 'GAYRİMENKUL' ? l6:sektorsec == 'HOLDİNGLER' ? m6:sektorsec == 'İLETİŞİM' ? n6 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o6 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o6:sektorsec == 'OTOMOTİV/PARÇA' ?T6:sektorsec == 'PERAKANDE/TİCARET' ?t6:na
+a7 = sektorsec == 'ARACI KURUMLAR' ? c7 : sektorsec == 'BANKACILIK' ? d7 : sektorsec == 'ÇİMENTO' ? e7 : sektorsec == 'DAYANIKLI TÜKETİM' ? f7 : sektorsec == 'DEMİR/ÇELİK' ? g7 : sektorsec == 'ENERJİ' ? h7 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j7 : sektorsec == 'GIDA' ? k7:sektorsec == 'GAYRİMENKUL' ? l7:sektorsec == 'HOLDİNGLER' ? m7:sektorsec == 'İLETİŞİM' ? n7 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o7 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o7:sektorsec == 'OTOMOTİV/PARÇA' ?T7:sektorsec == 'PERAKANDE/TİCARET' ?t7:na
+a8 = sektorsec == 'ARACI KURUMLAR' ? c8 : sektorsec == 'BANKACILIK' ? d8 : sektorsec == 'ÇİMENTO' ? e8 : sektorsec == 'DAYANIKLI TÜKETİM' ? f8 : sektorsec == 'DEMİR/ÇELİK' ? g8 : sektorsec == 'ENERJİ' ? h8 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j8 : sektorsec == 'GIDA' ? k8:sektorsec == 'GAYRİMENKUL' ? l8:sektorsec == 'HOLDİNGLER' ? m8:sektorsec == 'İLETİŞİM' ? n8 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o8 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o8:sektorsec == 'OTOMOTİV/PARÇA' ?T8:sektorsec == 'PERAKANDE/TİCARET' ?t8:na
+a9 = sektorsec == 'ARACI KURUMLAR' ? c9 : sektorsec == 'BANKACILIK' ? d9 : sektorsec == 'ÇİMENTO' ? e9 : sektorsec == 'DAYANIKLI TÜKETİM' ? f9 : sektorsec == 'DEMİR/ÇELİK' ? g9 : sektorsec == 'ENERJİ' ? h9 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j9 : sektorsec == 'GIDA' ? k9:sektorsec == 'GAYRİMENKUL' ? l9:sektorsec == 'HOLDİNGLER' ? m9:sektorsec == 'İLETİŞİM' ? n9 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o9 :sektorsec == 'KAĞIT ÜRÜNLERİ' ? o9:sektorsec == 'OTOMOTİV/PARÇA' ?T9:sektorsec == 'PERAKANDE/TİCARET' ?t9:na
+a10 = sektorsec == 'ARACI KURUMLAR' ? c10 : sektorsec == 'BANKACILIK' ? d10 : sektorsec == 'ÇİMENTO' ? e10 : sektorsec == 'DAYANIKLI TÜKETİM' ? f10 : sektorsec == 'DEMİR/ÇELİK' ? g10 : sektorsec == 'ENERJİ' ? h10 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j10 : sektorsec == 'GIDA' ? k10:sektorsec == 'GAYRİMENKUL' ? l10:sektorsec == 'HOLDİNGLER' ? m10:sektorsec == 'İLETİŞİM' ? n10 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o10: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o10:sektorsec == 'OTOMOTİV/PARÇA' ? T10:sektorsec == 'PERAKANDE/TİCARET' ?t10:na
+a11 = sektorsec == 'ARACI KURUMLAR' ? c11 : sektorsec == 'BANKACILIK' ? d11 : sektorsec == 'ÇİMENTO' ? e11 : sektorsec == 'DAYANIKLI TÜKETİM' ? f11 : sektorsec == 'DEMİR/ÇELİK' ? g11 : sektorsec == 'ENERJİ' ? h11 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j11 : sektorsec == 'GIDA' ? k11:sektorsec == 'GAYRİMENKUL' ? l12:sektorsec == 'HOLDİNGLER' ? m11:sektorsec == 'İLETİŞİM' ? n11:sektorsec == 'İNŞAAT MALZEMELERİ' ? o11: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o11:sektorsec == 'OTOMOTİV/PARÇA' ?T11:sektorsec == 'PERAKANDE/TİCARET' ?t11:na
+a12 = sektorsec == 'ARACI KURUMLAR' ? c12 : sektorsec == 'BANKACILIK' ? d12 : sektorsec == 'ÇİMENTO' ? e12 : sektorsec == 'DAYANIKLI TÜKETİM' ? f12 : sektorsec == 'DEMİR/ÇELİK' ? g12 : sektorsec == 'ENERJİ' ? h12 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j12 : sektorsec == 'GIDA' ? k12:sektorsec == 'GAYRİMENKUL' ? l13:sektorsec == 'HOLDİNGLER' ? m12:sektorsec == 'İLETİŞİM' ? n12:sektorsec == 'İNŞAAT MALZEMELERİ' ? o12: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o12:sektorsec == 'OTOMOTİV/PARÇA' ?T12:sektorsec == 'PERAKANDE/TİCARET' ?t12:na
+a13 = sektorsec == 'ARACI KURUMLAR' ? c13 : sektorsec == 'BANKACILIK' ? d13 : sektorsec == 'ÇİMENTO' ? e13 : sektorsec == 'DAYANIKLI TÜKETİM' ? f13 : sektorsec == 'DEMİR/ÇELİK' ? g13 : sektorsec == 'ENERJİ' ? h13 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j13 : sektorsec == 'GIDA' ? k13:sektorsec == 'GAYRİMENKUL' ? l14:sektorsec == 'HOLDİNGLER' ? m13:sektorsec == 'İLETİŞİM' ? n13:sektorsec == 'İNŞAAT MALZEMELERİ' ? o13: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o13:sektorsec == 'OTOMOTİV/PARÇA' ?T13:sektorsec == 'PERAKANDE/TİCARET' ?t13:na
+a14 = sektorsec == 'ARACI KURUMLAR' ? c14 : sektorsec == 'BANKACILIK' ? d14 : sektorsec == 'ÇİMENTO' ? e14 : sektorsec == 'DAYANIKLI TÜKETİM' ? f14 : sektorsec == 'DEMİR/ÇELİK' ? g14 : sektorsec == 'ENERJİ' ? h14 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j14 : sektorsec == 'GIDA' ? k14:sektorsec == 'GAYRİMENKUL' ? l15:sektorsec == 'HOLDİNGLER' ? m14:sektorsec == 'İLETİŞİM' ? n14:sektorsec == 'İNŞAAT MALZEMELERİ' ? o14: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o14:sektorsec == 'OTOMOTİV/PARÇA' ?T14:sektorsec == 'PERAKANDE/TİCARET' ?t14:na
+a15 = sektorsec == 'ARACI KURUMLAR' ? c15 : sektorsec == 'BANKACILIK' ? d15 : sektorsec == 'ÇİMENTO' ? e15 : sektorsec == 'DAYANIKLI TÜKETİM' ? f15 : sektorsec == 'DEMİR/ÇELİK' ? g15 : sektorsec == 'ENERJİ' ? h15 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j15 : sektorsec == 'GIDA' ? k15:sektorsec == 'GAYRİMENKUL' ? l16:sektorsec == 'HOLDİNGLER' ? m15:sektorsec == 'İLETİŞİM' ? n15:sektorsec == 'İNŞAAT MALZEMELERİ' ? o15: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o15:sektorsec == 'OTOMOTİV/PARÇA' ?T15:sektorsec == 'PERAKANDE/TİCARET' ?t15:na
+a16 = sektorsec == 'ARACI KURUMLAR' ? c16 : sektorsec == 'BANKACILIK' ? d16 : sektorsec == 'ÇİMENTO' ? e16 : sektorsec == 'DAYANIKLI TÜKETİM' ? f16 : sektorsec == 'DEMİR/ÇELİK' ? g16 : sektorsec == 'ENERJİ' ? h16 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j16 : sektorsec == 'GIDA' ? k16:sektorsec == 'GAYRİMENKUL' ? l17:sektorsec == 'HOLDİNGLER' ? m16:sektorsec == 'İLETİŞİM' ? n16:sektorsec == 'İNŞAAT MALZEMELERİ' ? o16: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o16:sektorsec == 'OTOMOTİV/PARÇA' ?T16:sektorsec == 'PERAKANDE/TİCARET' ?t16:na
+a17 = sektorsec == 'ARACI KURUMLAR' ? c17 : sektorsec == 'BANKACILIK' ? d17 : sektorsec == 'ÇİMENTO' ? e17 : sektorsec == 'DAYANIKLI TÜKETİM' ? f17 : sektorsec == 'DEMİR/ÇELİK' ? g17 : sektorsec == 'ENERJİ' ? h17 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j17 : sektorsec == 'GIDA' ? k17:sektorsec == 'GAYRİMENKUL' ? l18:sektorsec == 'HOLDİNGLER' ? m17:sektorsec == 'İLETİŞİM' ? n17:sektorsec == 'İNŞAAT MALZEMELERİ' ? o17: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o17:sektorsec == 'OTOMOTİV/PARÇA' ?T17:sektorsec == 'PERAKANDE/TİCARET' ?t17:na
+a18 = sektorsec == 'ARACI KURUMLAR' ? c18 : sektorsec == 'BANKACILIK' ? d18 : sektorsec == 'ÇİMENTO' ? e18 : sektorsec == 'DAYANIKLI TÜKETİM' ? f18 : sektorsec == 'DEMİR/ÇELİK' ? g18 : sektorsec == 'ENERJİ' ? h18 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j18 : sektorsec == 'GIDA' ? k18:sektorsec == 'GAYRİMENKUL' ? l19:sektorsec == 'HOLDİNGLER' ? m18:sektorsec == 'İLETİŞİM' ? n18:sektorsec == 'İNŞAAT MALZEMELERİ' ? o18: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o18:sektorsec == 'OTOMOTİV/PARÇA' ?T18:sektorsec == 'PERAKANDE/TİCARET' ?t18:na
+a19 = sektorsec == 'ARACI KURUMLAR' ? c19 : sektorsec == 'BANKACILIK' ? d19 : sektorsec == 'ÇİMENTO' ? e19 : sektorsec == 'DAYANIKLI TÜKETİM' ? f19 : sektorsec == 'DEMİR/ÇELİK' ? g19 : sektorsec == 'ENERJİ' ? h19 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j19 :sektorsec == 'GIDA' ? k19:sektorsec == 'GAYRİMENKUL' ? l20:sektorsec == 'HOLDİNGLER' ? m19:sektorsec == 'İLETİŞİM' ? n19:sektorsec == 'İNŞAAT MALZEMELERİ' ? o19: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o19:sektorsec == 'OTOMOTİV/PARÇA' ?T19:sektorsec == 'PERAKANDE/TİCARET' ?t19:na
+a20 = sektorsec == 'ARACI KURUMLAR' ? c20 : sektorsec == 'BANKACILIK' ? d20 : sektorsec == 'ÇİMENTO' ? e20 : sektorsec == 'DAYANIKLI TÜKETİM' ? f20 : sektorsec == 'DEMİR/ÇELİK' ? g20 : sektorsec == 'ENERJİ' ? h20 : sektorsec == 'TEÇHİZAT/TEKSTİL' ? j20 : sektorsec == 'GIDA' ? k20:sektorsec == 'GAYRİMENKUL' ? l11:sektorsec == 'HOLDİNGLER' ? m20:sektorsec == 'İLETİŞİM' ? n20 :sektorsec == 'İNŞAAT MALZEMELERİ' ? o20: sektorsec == 'KAĞIT ÜRÜNLERİ' ? o20: sektorsec == 'OTOMOTİV/PARÇA' ?T20:sektorsec == 'PERAKANDE/TİCARET' ?t20:na
+
+
+[v1,s1] = request.security(a1, per, func())
+[v2,s2] = request.security(a2, per, func())
+[v3,s3] = request.security(a3, per, func())
+[v4,s4] = request.security(a4, per, func())
+[v5,s5] = request.security(a5, per, func())
+[v6,s6] = request.security(a6, per, func())
+[v7,s7] = request.security(a7, per, func())
+[v8,s8] = request.security(a8, per, func())
+[v9,s9] = request.security(a9, per, func())
+[v10,s10] = request.security(a10, per, func())
+[v11,s11] = request.security(a11, per, func())
+[v12,s12] = request.security(a12, per, func())
+[v13,s13] = request.security(a13, per, func())
+[v14,s14] = request.security(a14, per, func())
+[v15,s15] = request.security(a15, per, func())
+[v16,s16] = request.security(a16, per, func())
+[v17,s17] = request.security(a17, per, func())
+[v18,s18] = request.security(a18, per, func())
+[v19,s19] = request.security(a19, per, func())
+[v20,s20] = request.security(a20, per, func())
+
+roundn(x, n) =>
+    mult = 1
+    if n != 0
+        for i = 1 to math.abs(n) by 1
+            mult *= 10
+            mult
+
+    n >= 0 ? math.round(x * mult) / mult : math.round(x / mult) * mult
+
+
+scr_label = 'TARAMA\n'
+scr_label := s1 ? scr_label + syminfo.ticker(a1) + ' ' + str.tostring(roundn(v1, 2)) + '\n' : scr_label
+scr_label := s2 ? scr_label + syminfo.ticker(a2) + ' ' + str.tostring(roundn(v2, 2)) + '\n' : scr_label
+scr_label := s3 ? scr_label + syminfo.ticker(a3) + ' ' + str.tostring(roundn(v3, 2)) + '\n' : scr_label
+scr_label := s4 ? scr_label + syminfo.ticker(a4) + ' ' + str.tostring(roundn(v4, 2)) + '\n' : scr_label
+scr_label := s5 ? scr_label + syminfo.ticker(a5) + ' ' + str.tostring(roundn(v5, 2)) + '\n' : scr_label
+scr_label := s6 ? scr_label + syminfo.ticker(a6) + ' ' + str.tostring(roundn(v6, 2)) + '\n' : scr_label
+scr_label := s7 ? scr_label + syminfo.ticker(a7) + ' ' + str.tostring(roundn(v7, 2)) + '\n' : scr_label
+scr_label := s8 ? scr_label + syminfo.ticker(a8) + ' ' + str.tostring(roundn(v8, 2)) + '\n' : scr_label
+scr_label := s9 ? scr_label + syminfo.ticker(a9) + ' ' + str.tostring(roundn(v9, 2)) + '\n' : scr_label
+scr_label := s10 ? scr_label + syminfo.ticker(a10) + ' ' + str.tostring(roundn(v10, 2)) + '\n' : scr_label
+scr_label := s11 ? scr_label + syminfo.ticker(a11) + ' ' + str.tostring(roundn(v11, 2)) + '\n' : scr_label
+scr_label := s12 ? scr_label + syminfo.ticker(a12) + ' ' + str.tostring(roundn(v12, 2)) + '\n' : scr_label
+scr_label := s13 ? scr_label + syminfo.ticker(a13) + ' ' + str.tostring(roundn(v13, 2)) + '\n' : scr_label
+scr_label := s14 ? scr_label + syminfo.ticker(a14) + ' ' + str.tostring(roundn(v14, 2)) + '\n' : scr_label
+scr_label := s15 ? scr_label + syminfo.ticker(a15) + ' ' + str.tostring(roundn(v15, 2)) + '\n' : scr_label
+scr_label := s16 ? scr_label + syminfo.ticker(a16) + ' ' + str.tostring(roundn(v16, 2)) + '\n' : scr_label
+scr_label := s17 ? scr_label + syminfo.ticker(a17) + ' ' + str.tostring(roundn(v17, 2)) + '\n' : scr_label
+scr_label := s18 ? scr_label + syminfo.ticker(a18) + ' ' + str.tostring(roundn(v18, 2)) + '\n' : scr_label
+scr_label := s19 ? scr_label + syminfo.ticker(a19) + ' ' + str.tostring(roundn(v19, 2)) + '\n' : scr_label
+scr_label := s20 ? scr_label + syminfo.ticker(a20) + ' ' + str.tostring(roundn(v20, 2)) + '\n' : scr_label
+
+
+
+
+var panel = table.new(position = position.middle_right,columns = 10,rows = 10,bgcolor = color.green,frame_color = color.black,border_color = color.red)
+
+
+
+if barstate.islast
+    table.cell(panel,0,0,text = str.tostring(scr_label))
+
