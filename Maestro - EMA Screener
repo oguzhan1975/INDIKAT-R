@@ -1,0 +1,84 @@
+//@version=5
+indicator('Maestro - EMA Screener20x', shorttitle='Maestro - EMA Screener20x', overlay=true)
+
+var table emaTable = na
+
+tablePosition = input.string('Bottom Right', title='Table Position', options=['Bottom Right', 'Middle Right', 'Top Right', 'Bottom Left', 'Middle Left', 'Top Left', 'Middle Center', 'Bottom Center', 'Top Center'])
+tableTextSizeInput = input.string('Small', title='Table Text Size', options=['Huge', 'Large', 'Normal', 'Small'])
+tableTextSize = tableTextSizeInput == 'Small' ? size.small : tableTextSizeInput == 'Normal' ? size.normal : tableTextSizeInput == 'Large' ? size.large : size.huge
+
+higherTF = input.timeframe('D', title='Higher Timeframe')
+
+c1 = input.symbol(title='1', defval='BIST:ASELS')
+c2 = input.symbol(title='2', defval='BIST:THYAO')
+c3 = input.symbol(title='3', defval='BIST:TUPRS')
+c4 = input.symbol(title='4', defval='BIST:VESTL')
+c5 = input.symbol(title='5', defval='BIST:BOBET')
+c6 = input.symbol(title='6', defval='BIST:DOAS')
+c7 = input.symbol(title='7', defval='BIST:GRSEL')
+c8 = input.symbol(title='8', defval='BIST:MAVI')
+c9 = input.symbol(title='9', defval='BIST:TTKOM')
+c10 = input.symbol(title='10', defval='BIST:SASA')
+c11 = input.symbol(title='11', defval='BIST:AKBNK')
+c12 = input.symbol(title='12', defval='BIST:PETKM')
+c13 = input.symbol(title='13', defval='BIST:TKFEN')
+c14 = input.symbol(title='14', defval='BIST:KRDMD')
+c15 = input.symbol(title='15', defval='BIST:PGSUS')
+c16 = input.symbol(title='16', defval='BIST:GARAN')
+c17 = input.symbol(title='17', defval='BIST:VAKBN')
+c18 = input.symbol(title='18', defval='BIST:ARCLK')
+c19 = input.symbol(title='19', defval='BIST:ENJSA')
+c20 = input.symbol(title='20', defval='BIST:HALKB')
+
+if bar_index == 0
+    emaTable := table.new(position=tablePosition == 'Bottom Left' ? position.bottom_left : tablePosition == 'Bottom Center' ? position.bottom_center : tablePosition == 'Bottom Right' ? position.bottom_right : tablePosition == 'Middle Left' ? position.middle_left : tablePosition == 'Middle Center' ? position.middle_center : tablePosition == 'Middle Right' ? position.middle_right : tablePosition == 'Top Left' ? position.top_left : tablePosition == 'Top Center' ? position.top_center : position.top_right, columns=11, bgcolor=#e7ede2, frame_color=color.rgb(112, 112, 112), frame_width=0, border_color=color.rgb(112, 112, 112), border_width=0, rows=21)
+
+    table.cell(emaTable, 0, 0, "Stock", bgcolor=#BABABA, text_size=tableTextSize)
+    table.cell(emaTable, 1, 0, "8 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+    table.cell(emaTable, 2, 0, "21 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+    table.cell(emaTable, 3, 0, "63 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+    table.cell(emaTable, 4, 0, "126 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+    table.cell(emaTable, 5, 0, "252 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+    table.cell(emaTable, 6, 0, "756 EMA", bgcolor=#A3DD97, text_size=tableTextSize)
+
+calcAndDisplayEMA(ticker, row) =>
+    ema8 = ta.ema(request.security(ticker, higherTF, close), 8)
+    ema21 = ta.ema(request.security(ticker, higherTF, close), 21)
+    ema63 = ta.ema(request.security(ticker, higherTF, close), 63)
+    ema126 = ta.ema(request.security(ticker, higherTF, close), 126)
+    ema252 = ta.ema(request.security(ticker, higherTF, close), 252)
+    ema756 = ta.ema(request.security(ticker, higherTF, close), 756)
+    
+    currentClose = request.security(ticker, "D", close)
+    
+    table.cell(emaTable, 0, row, ticker)
+    table.cell(emaTable, 1, row, currentClose > ema8 ? str.tostring(ema8, format.mintick) : str.tostring(ema8, format.mintick), bgcolor = currentClose > ema8 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+    table.cell(emaTable, 2, row, currentClose > ema21 ? str.tostring(ema21, format.mintick) : str.tostring(ema21, format.mintick), bgcolor = currentClose > ema21 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+    table.cell(emaTable, 3, row, currentClose > ema63 ? str.tostring(ema63, format.mintick) : str.tostring(ema63, format.mintick), bgcolor = currentClose > ema63 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+    table.cell(emaTable, 4, row, currentClose > ema126 ? str.tostring(ema126, format.mintick) : str.tostring(ema126, format.mintick), bgcolor = currentClose > ema126 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+    table.cell(emaTable, 5, row, currentClose > ema252 ? str.tostring(ema252, format.mintick) : str.tostring(ema252, format.mintick), bgcolor = currentClose > ema252 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+    table.cell(emaTable, 6, row, currentClose > ema756 ? str.tostring(ema756, format.mintick) : str.tostring(ema756, format.mintick), bgcolor = currentClose > ema756 ? color.lime : color.red, text_halign  = text.align_left, text_size=tableTextSize)
+
+calcAndDisplayEMA(c1, 1)
+calcAndDisplayEMA(c2, 2)
+calcAndDisplayEMA(c3, 3)
+calcAndDisplayEMA(c4, 4)
+calcAndDisplayEMA(c5, 5)
+calcAndDisplayEMA(c6, 6)
+calcAndDisplayEMA(c7, 7)
+calcAndDisplayEMA(c8, 8)
+calcAndDisplayEMA(c9, 9)
+calcAndDisplayEMA(c10, 10)
+calcAndDisplayEMA(c11, 11)
+calcAndDisplayEMA(c12, 12)
+calcAndDisplayEMA(c13, 13)
+calcAndDisplayEMA(c14, 14)
+calcAndDisplayEMA(c15, 15)
+calcAndDisplayEMA(c16, 16)
+calcAndDisplayEMA(c17, 17)
+calcAndDisplayEMA(c18, 18)
+calcAndDisplayEMA(c19, 19)
+calcAndDisplayEMA(c20, 20)
+
+// Eski tablo verilerini sil
+//table.delete(emaTable)
