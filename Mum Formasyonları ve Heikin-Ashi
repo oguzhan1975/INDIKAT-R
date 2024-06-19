@@ -1,0 +1,594 @@
+/// semihtat7 ****Kazançlı Günlerde Kullanın...
+
+//@version=5
+indicator("Mum Formasyonları ve Heikin-Ashi", shorttitle = "Mum Formasyonları ve Heikin-Ashi", overlay=true)
+
+moving_ok = input(false,"Mum Formasyonlarını Göster",group = "SEÇENEKLER")
+moving_ok_ha = input(false,"Heikin-Ashi Mumlarını Göster",group = "SEÇENEKLER")
+
+C_DownTrend = true
+C_UpTrend = true
+var trendRule1 = "SMA50"
+var trendRule2 = "SMA50, SMA200"
+var trendRule = input.string(trendRule1, "Trend Temeli", options=[trendRule1, trendRule2, "Hiçbiri"])
+
+if trendRule == trendRule1
+	priceAvg = ta.sma(close, 50)
+	C_DownTrend := close < priceAvg
+	C_UpTrend := close > priceAvg
+
+if trendRule == trendRule2
+	sma200 = ta.sma(close, 200)
+	sma50 = ta.sma(close, 50)
+	C_DownTrend := close < sma50 and sma50 < sma200
+	C_UpTrend := close > sma50 and sma50 > sma200
+C_Len = 14 // ta.ema depth for bodyAvg
+C_ShadowPercent = 5.0 // size of shadows
+C_ShadowEqualsPercent = 100.0
+C_DojiBodyPercent = 5.0
+C_Factor = 2.0 // shows the number of times the shadow dominates the candlestick body
+
+C_BodyHi = math.max(close, open)
+C_BodyLo = math.min(close, open)
+C_Body = C_BodyHi - C_BodyLo
+C_BodyAvg = ta.ema(C_Body, C_Len)
+C_SmallBody = C_Body < C_BodyAvg
+C_LongBody = C_Body > C_BodyAvg
+C_UpShadow = high - C_BodyHi
+C_DnShadow = C_BodyLo - low
+C_HasUpShadow = C_UpShadow > C_ShadowPercent / 100 * C_Body
+C_HasDnShadow = C_DnShadow > C_ShadowPercent / 100 * C_Body
+C_WhiteBody = open < close
+C_BlackBody = open > close
+C_Range = high-low
+C_IsInsideBar = C_BodyHi[1] > C_BodyHi and C_BodyLo[1] < C_BodyLo
+C_BodyMiddle = C_Body / 2 + C_BodyLo
+C_ShadowEquals = C_UpShadow == C_DnShadow or (math.abs(C_UpShadow - C_DnShadow) / C_DnShadow * 100) < C_ShadowEqualsPercent and (math.abs(C_DnShadow - C_UpShadow) / C_UpShadow * 100) < C_ShadowEqualsPercent
+C_IsDojiBody = C_Range > 0 and C_Body <= C_Range * C_DojiBodyPercent / 100
+C_Doji = C_IsDojiBody and C_ShadowEquals
+
+patternLabelPosLow = low - (ta.atr(30) * 0.6)
+patternLabelPosHigh = high + (ta.atr(30) * 0.6)
+
+label_color_bullish = input(color.blue, "Boğa Formasyonları")
+label_color_bearish = input(color.red, "Ayı Formasyonları")
+label_color_neutral = input(color.gray, "Kararsız Yapı")
+CandleType = input.string(title = "Formasyon Tipi", defval="Her İkisi", options=["Bullish", "Bearish", "Her İkisi"])
+
+AbandonedBabyInput = input(title = "Terk Edilmiş Bebek-Boğa" ,defval=true) 
+
+DarkCloudCoverInput = input(title = "Kara Bulut-Ayı" ,defval=true) 
+
+DojiInput = input(title = "Doji" ,defval=true) 
+
+DojiStarInput = input(title = "Doji Yıldızı-Ayı" ,defval=true) 
+
+DownsideTasukiGapInput = input(title = "Aşağı Yönlü Tasuki-Ayı" ,defval=true) 
+
+DragonflyDojiInput = input(title = "Yusufçuk Doji-Boğa" ,defval=true) 
+
+EngulfingInput = input(title = "Yutan Ayı" ,defval=true) 
+
+EveningDojiStarInput = input(title = "Akşam Doji Yıldızı-Ayı" ,defval=true) 
+
+EveningStarInput = input(title = "Akşam Yıldızı-Ayı" ,defval=true) 
+
+FallingThreeMethodsInput = input(title = "Düşen Üçlü" ,defval=true) 
+
+FallingWindowInput = input(title = "Düşen Pencere" ,defval=true) 
+
+GravestoneDojiInput = input(title = "Mezartaşı Doji-Ayı" ,defval=true) 
+
+HammerInput = input(title = "Çekiç-Boğa" ,defval=true) 
+
+HangingManInput = input(title = "Asılı Adam-Ayı" ,defval=true) 
+
+HaramiCrossInput = input(title = "Kros Hamile" ,defval=true) 
+
+HaramiInput = input(title = "Harami" ,defval=true) 
+
+InvertedHammerInput = input(title = "Ters Çekiç-Boğa" ,defval=true) 
+
+KickingInput = input(title = "Tepen Mumlar" ,defval=true) 
+
+LongLowerShadowInput = input(title = "Uzun Alt Gölge-Boğa" ,defval=true) 
+
+LongUpperShadowInput = input(title = "Uzun Üst Gölge-Ayı" ,defval=true) 
+
+MarubozuBlackInput = input(title = "Marubozu Siyah-Ayı" ,defval=true) 
+
+MarubozuWhiteInput = input(title = "Marubozu Beyaz-Boğa" ,defval=true) 
+
+MorningDojiStarInput = input(title = "Sabah Doji Yıldızı" ,defval=true) 
+
+MorningStarInput = input(title = "Sabah Yıldızı" ,defval=true) 
+
+OnNeckInput = input(title = "Yaka-Ayı" ,defval=true) 
+
+PiercingInput = input(title = "Delen Mumlar-Boğa" ,defval=true) 
+
+RisingThreeMethodsInput = input(title = "Yükselen Üçlü" ,defval=true) 
+
+RisingWindowInput = input(title = "Yükselen Pencere" ,defval=true) 
+
+ShootingStarInput = input(title = "Kayan Yıldız-Ayı" ,defval=true) 
+
+SpinningTopBlackInput = input(title = "Siyah Topaç" ,defval=true) 
+
+SpinningTopWhiteInput = input(title = "Beyaz Topaç" ,defval=true) 
+
+ThreeBlackCrowsInput = input(title = "Üç Siyah Karga" ,defval=true) 
+
+ThreeWhiteSoldiersInput = input(title = "Üç Beyaz Asker" ,defval=true) 
+
+TriStarInput = input(title = "Üç Yıldız-Boğa" ,defval=true) 
+
+TweezerBottomInput = input(title = "Cımbız Dip-Boğa" ,defval=true) 
+
+TweezerTopInput = input(title = "Cımbız Tepe-Ayı" ,defval=true) 
+
+UpsideTasukiGapInput = input(title = "Yukarı Yönlü Tasuki-Boğa" ,defval=true) 
+
+C_OnNeckBearishNumberOfCandles = 2
+C_OnNeckBearish = false
+if C_DownTrend and C_BlackBody[1] and C_LongBody[1] and C_WhiteBody and open < close[1] and C_SmallBody and C_Range!=0 and math.abs(close-low[1])<=C_BodyAvg*0.05
+	C_OnNeckBearish := true
+alertcondition(C_OnNeckBearish, title = "On Neck – Bearish", message = "New On Neck – Bearish pattern detected")
+if C_OnNeckBearish  and  OnNeckInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+    
+
+    var ttBearishOnNeck = "Yaka-Ayı; Düşüş trendinde bulunan iki çizgili bir devam formasyonudur. İlk mum uzun ve kırmızı, ikinci mum kısa ve yeşil gövdelidir. İkinci mumun kapanış fiyatı şuna yakın veya eşittir: İlk mumun düşük fiyatı Formasyon düşüş trendinin devam ettiğine işaret eder ve yeşil mum çubuğunun en düşük seviyesine inmek bazen bir onay olarak kabul edilir."
+    label.new(bar_index, patternLabelPosHigh, text="Yaka-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishOnNeck)
+C_RisingWindowBullishNumberOfCandles = 2
+C_RisingWindowBullish = false
+if C_UpTrend[1] and (C_Range!=0 and C_Range[1]!=0) and low > high[1]
+	C_RisingWindowBullish := true
+alertcondition(C_RisingWindowBullish, title = "Rising Window – Bullish", message = "New Rising Window – Bullish pattern detected")
+if C_RisingWindowBullish  and  RisingWindowInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishRisingWindow = "Yükselen Pencere, yükseliş trendi sırasında oluşan iki mumlu yükseliş devam formasyonudur. Desendeki her iki mum da Dört Fiyatlı Doji haricinde her türden olabilir. Formasyonun en önemli özelliği, ilk mumun en yüksek seviyesi ile ikinci mumun en düşük seviyesi arasındaki fiyat farkıdır. İki çubuk arasındaki bu boşluk (pencere), satış baskısına karşı desteği ifade ediyor."
+    label.new(bar_index, patternLabelPosLow, text="Yükselen Pencere", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishRisingWindow)
+C_FallingWindowBearishNumberOfCandles = 2
+C_FallingWindowBearish = false
+if C_DownTrend[1] and (C_Range!=0 and C_Range[1]!=0) and high < low[1]
+	C_FallingWindowBearish := true
+alertcondition(C_FallingWindowBearish, title = "Falling Window – Bearish", message = "New Falling Window – Bearish pattern detected")
+if C_FallingWindowBearish  and  FallingWindowInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishFallingWindow = "Düşen Pencere, düşüş trendi sırasında oluşan iki mumlu bir düşüş devam formasyonudur. Desendeki her iki mum da Dört Fiyatlı Doji haricinde her türden olabilir. Formasyonun en önemli özelliği, ilk mumun en düşük seviyesi ile ikinci mumun en yüksek seviyesi arasındaki fiyat farkıdır. Bu boşluğun (pencerenin) varlığı, düşüş eğiliminin devam etmesi beklendiği anlamına geliyor."
+    label.new(bar_index, patternLabelPosHigh, text="Düşen Pencere", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishFallingWindow)
+C_FallingThreeMethodsBearishNumberOfCandles = 5
+C_FallingThreeMethodsBearish = false
+if C_DownTrend[4] and (C_LongBody[4] and C_BlackBody[4]) and (C_SmallBody[3] and C_WhiteBody[3] and open[3]>low[4] and close[3]<high[4]) and (C_SmallBody[2] and C_WhiteBody[2] and open[2]>low[4] and close[2]<high[4]) and (C_SmallBody[1] and C_WhiteBody[1] and open[1]>low[4] and close[1]<high[4]) and (C_LongBody and C_BlackBody and close<close[4])
+	C_FallingThreeMethodsBearish := true
+alertcondition(C_FallingThreeMethodsBearish, title = "Falling Three Methods – Bearish", message = "New Falling Three Methods – Bearish pattern detected")
+if C_FallingThreeMethodsBearish  and  FallingThreeMethodsInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishFallingThreeMethods = "Düşen Üçlü, mevcut düşüş trendinin devam ettiğini gösteren beş mumlu bir düşüş formasyonudur. İlk mum uzun ve kırmızıdır, ardından gövdeleri ilk mumun menzili içinde olan üç kısa yeşil mum gelir. Son mum da kırmızı ve uzundur ve ilk mumun kapanış seviyesinin altında kapanır. Bu belirleyici beşinci güçlü düşüş mumu, boğaların önceki düşüş trendini tersine çeviremediğini ve ayıların piyasanın kontrolünü yeniden ele geçirdiğini ima ediyor."
+    label.new(bar_index, patternLabelPosHigh, text="Düşen Üçlü", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishFallingThreeMethods)
+C_RisingThreeMethodsBullishNumberOfCandles = 5
+C_RisingThreeMethodsBullish = false
+if C_UpTrend[4] and (C_LongBody[4] and C_WhiteBody[4]) and (C_SmallBody[3] and C_BlackBody[3] and open[3]<high[4] and close[3]>low[4]) and (C_SmallBody[2] and C_BlackBody[2] and open[2]<high[4] and close[2]>low[4]) and (C_SmallBody[1] and C_BlackBody[1] and open[1]<high[4] and close[1]>low[4]) and (C_LongBody and C_WhiteBody and close>close[4])
+	C_RisingThreeMethodsBullish := true
+alertcondition(C_RisingThreeMethodsBullish, title = "Rising Three Methods – Bullish", message = "New Rising Three Methods – Bullish pattern detected")
+if C_RisingThreeMethodsBullish  and  RisingThreeMethodsInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishRisingThreeMethods = "Yükselen Üçlü, mevcut yükseliş trendinin devam ettiğini gösteren beş mumlu bir yükseliş formasyonudur. İlk mum uzun ve yeşildir, ardından gövdeleri ilk mumun menzili içinde olan üç kısa kırmızı mum gelir. Son mum da yeşil ve uzundur ve ilk mumun kapanışının üzerinde kapanır. Bu belirleyici beşinci güçlü yükseliş mumu, ayıların önceki yükseliş trendini tersine çeviremediğini ve boğaların piyasanın kontrolünü yeniden ele geçirdiğini ima ediyor."
+    label.new(bar_index, patternLabelPosLow, text="Yükselen Üçlü", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishRisingThreeMethods)
+C_TweezerTopBearishNumberOfCandles = 2
+C_TweezerTopBearish = false
+if C_UpTrend[1] and (not C_IsDojiBody or (C_HasUpShadow and C_HasDnShadow)) and math.abs(high-high[1]) <= C_BodyAvg*0.05 and C_WhiteBody[1] and C_BlackBody and C_LongBody[1]
+	C_TweezerTopBearish := true
+alertcondition(C_TweezerTopBearish, title = "Tweezer Top – Bearish", message = "New Tweezer Top – Bearish pattern detected")
+if C_TweezerTopBearish  and  TweezerTopInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishTweezerTop = "Cımbız Tepe-Ayı potansiyel bir düşüş eğilimine işaret eden iki mumlu bir formasyondur. Desen bir yükseliş trendi sırasında bulunur. İlk mum uzun ve yeşildir, ikinci mum kırmızıdır ve yüksekliği önceki mumun yüksekliğiyle neredeyse aynıdır. Neredeyse aynı yüksek seviyeler ve ters yönler, ayıların piyasayı ele geçirebileceğine işaret ediyor."
+    label.new(bar_index, patternLabelPosHigh, text="Cımbız Tepe", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishTweezerTop)
+C_TweezerBottomBullishNumberOfCandles = 2
+C_TweezerBottomBullish = false
+if C_DownTrend[1] and (not C_IsDojiBody or (C_HasUpShadow and C_HasDnShadow)) and math.abs(low-low[1]) <= C_BodyAvg*0.05 and C_BlackBody[1] and C_WhiteBody and C_LongBody[1]
+	C_TweezerBottomBullish := true
+alertcondition(C_TweezerBottomBullish, title = "Tweezer Bottom – Bullish", message = "New Tweezer Bottom – Bullish pattern detected")
+if C_TweezerBottomBullish  and  TweezerBottomInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishTweezerBottom = "Cımbız Dip, potansiyel yükseliş eğilimini ifade eden iki mumlu bir formasyondur. Desen bir düşüş trendi sırasında bulunur. İlk mum uzun ve kırmızıdır, ikinci mum yeşildir, düşük seviyeleri önceki mumun düşük seviyesiyle neredeyse aynıdır. Neredeyse aynı düşük seviyeler ve ters yönler, boğaların piyasayı ele geçirebileceğine işaret ediyor."
+    label.new(bar_index, patternLabelPosLow, text="Cımbız Dip", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishTweezerBottom)
+C_DarkCloudCoverBearishNumberOfCandles = 2
+C_DarkCloudCoverBearish = false
+if (C_UpTrend[1] and C_WhiteBody[1] and C_LongBody[1]) and (C_BlackBody and open >= high[1] and  close < C_BodyMiddle[1] and close > open[1])
+	C_DarkCloudCoverBearish := true
+alertcondition(C_DarkCloudCoverBearish, title = "Dark Cloud Cover – Bearish", message = "New Dark Cloud Cover – Bearish pattern detected")
+if C_DarkCloudCoverBearish  and  DarkCloudCoverInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishDarkCloudCover = "Kara Bulut-Ayı, yükseliş trendinde bulunan iki mumlu düşüş yönlü bir ters mum çubuğu formasyonudur. İlk mum yeşildir ve ortalamanın üzerinde bir gövdeye sahiptir. İkinci mum kırmızıdır ve önceki mumun en yüksek noktasının üzerinde açılır, bir boşluk yaratır ve ardından ilk mumun orta noktasının altında kapanır. Desen, momentumun yukarıdan aşağıya doğru olası bir değişimini gösteriyor ve bu da yakında bir tersine dönüş olabileceğini gösteriyor."
+    label.new(bar_index, patternLabelPosHigh, text="Kara Bulut-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishDarkCloudCover)
+C_DownsideTasukiGapBearishNumberOfCandles = 3
+C_DownsideTasukiGapBearish = false
+if C_LongBody[2] and C_SmallBody[1] and C_DownTrend and C_BlackBody[2] and C_BodyHi[1] < C_BodyLo[2] and C_BlackBody[1] and C_WhiteBody and C_BodyHi <= C_BodyLo[2] and C_BodyHi >= C_BodyHi[1]
+	C_DownsideTasukiGapBearish := true
+alertcondition(C_DownsideTasukiGapBearish, title = "Downside Tasuki Gap – Bearish", message = "New Downside Tasuki Gap – Bearish pattern detected")
+if C_DownsideTasukiGapBearish  and  DownsideTasukiGapInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishDownsideTasukiGap = "Aşağı Yönlü Tasuki-Ayı, düşüş trendinde bulunan ve genellikle düşüş trendinin devamına işaret eden üç mumlu bir formasyondur. İlk mum uzun ve kırmızıdır, ardından açılış fiyatı önceki mumun gövdesinin altında olan daha küçük bir kırmızı mum gelir. Üçüncü mum yeşil renktedir ve ilk iki mumun oluşturduğu boşluğun içinde kapanır, onu tam olarak kapatamaz. Boğanın bu açığı kapatamaması, düşüş trendinin devam edebileceğine işaret ediyor."
+    label.new(bar_index, patternLabelPosHigh, text="Aşağı Yönlü Tasuki-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishDownsideTasukiGap)
+C_UpsideTasukiGapBullishNumberOfCandles = 3
+C_UpsideTasukiGapBullish = false
+if C_LongBody[2] and C_SmallBody[1] and C_UpTrend and C_WhiteBody[2] and C_BodyLo[1] > C_BodyHi[2] and C_WhiteBody[1] and C_BlackBody and C_BodyLo >= C_BodyHi[2] and C_BodyLo <= C_BodyLo[1]
+	C_UpsideTasukiGapBullish := true
+alertcondition(C_UpsideTasukiGapBullish, title = "Upside Tasuki Gap – Bullish", message = "New Upside Tasuki Gap – Bullish pattern detected")
+if C_UpsideTasukiGapBullish  and  UpsideTasukiGapInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishUpsideTasukiGap = "Yukarı Yönlü Tasuki-Boğa, yükseliş trendinde bulunan ve genellikle yükseliş trendinin devamına işaret eden üç mumlu bir formasyondur. İlk mum uzun ve yeşildir, ardından açılış fiyatı önceki mumun gövdesinin üzerinde olan daha küçük bir yeşil mum gelir. Üçüncü mum kırmızıdır ve ilk iki mumun oluşturduğu boşluğun içinde kapanır, tam olarak kapatılamaz. Ayının aradaki farkı kapatamaması yükseliş trendinin devam edebileceğine işaret ediyor."
+    label.new(bar_index, patternLabelPosLow, text="Yukarı Yönlü Tasuki", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishUpsideTasukiGap)
+C_EveningDojiStarBearishNumberOfCandles = 3
+C_EveningDojiStarBearish = false
+if C_LongBody[2] and C_IsDojiBody[1] and C_LongBody and C_UpTrend and C_WhiteBody[2] and C_BodyLo[1] > C_BodyHi[2] and C_BlackBody and C_BodyLo <= C_BodyMiddle[2] and C_BodyLo > C_BodyLo[2] and C_BodyLo[1] > C_BodyHi
+	C_EveningDojiStarBearish := true
+alertcondition(C_EveningDojiStarBearish, title = "Evening Doji Star – Bearish", message = "New Evening Doji Star – Bearish pattern detected")
+if C_EveningDojiStarBearish  and  EveningDojiStarInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishEveningDojiStar = "Akşam Doji Yıldızı, Bu mum çubuğu deseni, Akşam Yıldızı deseninin bir çeşididir. Düşüş eğiliminde ve uzun gövdeli, yeşil mumlu bir günle yükseliş trendini sürdürüyor. Daha sonra bir boşluk ve bir Doji mumu gelir ve aşağı yönlü bir kapanışla tamamlanır. Kapanış ilk günün orta noktasının altında gerçekleşecek. Doji'nin varlığı nedeniyle normal akşam yıldızı formasyonundan daha fazla düşüş eğilimi gösterir."
+    label.new(bar_index, patternLabelPosHigh, text="Akşam Doji Yıldızı-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishEveningDojiStar)
+C_DojiStarBearishNumberOfCandles = 2
+C_DojiStarBearish = false
+if C_UpTrend and C_WhiteBody[1] and C_LongBody[1] and C_IsDojiBody and C_BodyLo > C_BodyHi[1]
+	C_DojiStarBearish := true
+alertcondition(C_DojiStarBearish, title = "Doji Star – Bearish", message = "New Doji Star – Bearish pattern detected")
+if C_DojiStarBearish  and  DojiStarInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishDojiStar = "Doji Yıldızı, yükseliş trendinde bulunan ve iki mumdan oluşan, düşüş yönlü bir ters mum çubuğu formasyonudur. Önce uzun yeşil bir mum gelir, ardından ilkinin gövdesinin üzerinde açılan ve boşluk oluşturan bir Doji mumu (4 Fiyatlı Doji hariç) gelir. Bir sonraki işlem gününde onaylanan bir geri dönüş sinyali olarak kabul edilir."
+    label.new(bar_index, patternLabelPosHigh, text="Doji Yıldız", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishDojiStar)
+C_DojiStarBullishNumberOfCandles = 2
+C_DojiStarBullish = false
+if C_DownTrend and C_BlackBody[1] and C_LongBody[1] and C_IsDojiBody and C_BodyHi < C_BodyLo[1]
+	C_DojiStarBullish := true
+alertcondition(C_DojiStarBullish, title = "Doji Star – Bullish", message = "New Doji Star – Bullish pattern detected")
+if C_DojiStarBullish  and  DojiStarInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishDojiStar = "Doji Yıldızı; düşüş trendinde bulunan ve iki mumdan oluşan bir yükseliş mum çubuğu formasyonudur. Önce uzun kırmızı bir mum gelir, ardından ilkinin gövdesinin altına açılan ve boşluk oluşturan bir Doji mumu (4 Fiyatlı Doji hariç) gelir. Bir sonraki işlem gününde onaylanan bir geri dönüş sinyali olarak kabul edilir."
+    label.new(bar_index, patternLabelPosLow, text="Doji Yıldızı", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishDojiStar)
+C_MorningDojiStarBullishNumberOfCandles = 3
+C_MorningDojiStarBullish = false
+if C_LongBody[2] and C_IsDojiBody[1] and C_LongBody and C_DownTrend and C_BlackBody[2] and C_BodyHi[1] < C_BodyLo[2] and C_WhiteBody and C_BodyHi >= C_BodyMiddle[2] and C_BodyHi < C_BodyHi[2] and C_BodyHi[1] < C_BodyLo
+	C_MorningDojiStarBullish := true
+alertcondition(C_MorningDojiStarBullish, title = "Morning Doji Star – Bullish", message = "New Morning Doji Star – Bullish pattern detected")
+if C_MorningDojiStarBullish  and  MorningDojiStarInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishMorningDojiStar = "Sabah Doji Yıldızı ; mum çubuğu deseni, Sabah Yıldızı deseninin bir çeşididir. Üç mum çubuğundan oluşan üç günlük bir yükseliş dönüş formasyonu şuna benzer: İlki, mevcut düşüş trendini uzatan uzun gövdeli bir kırmızı mumdur. Daha sonra açıkta boşluk bırakan bir Doji geliyor. Bundan sonra, açıkta yukarı doğru açılan ve ilk günkü gövdenin orta noktasının üzerinde kapanan uzun gövdeli yeşil bir mum gelir. Doji'nin varlığı nedeniyle normal sabah yıldızı formasyonundan daha yükseliş eğilimi gösterir."
+    label.new(bar_index, patternLabelPosLow, text="Sabah Doji Yıldızı-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishMorningDojiStar)
+C_PiercingBullishNumberOfCandles = 2
+C_PiercingBullish = false
+if (C_DownTrend[1] and C_BlackBody[1] and C_LongBody[1]) and (C_WhiteBody and open <= low[1] and close > C_BodyMiddle[1] and close < open[1])
+	C_PiercingBullish := true
+alertcondition(C_PiercingBullish, title = "Piercing – Bullish", message = "New Piercing – Bullish pattern detected")
+if C_PiercingBullish  and  PiercingInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishPiercing = "Delen Mumlar-Boğa, düşüş trendinde bulunan iki mumlu ters dönüş mum çubuğu formasyonudur. İlk mum kırmızıdır ve ortalamanın üzerinde bir gövdeye sahiptir. İkinci mum yeşildir ve önceki mumun en düşük seviyesinin altında açılır, bir boşluk yaratır ve ardından ilk mumun orta noktasının üzerinde kapanır. Desen, momentumun aşağı taraftan yukarıya doğru olası bir değişimini gösteriyor ve bu da yakında bir tersine dönüşün olabileceğini gösteriyor."
+    label.new(bar_index, patternLabelPosLow, text="Delen Mumlar Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishPiercing)
+C_HammerBullishNumberOfCandles = 1
+C_HammerBullish = false
+if C_SmallBody and C_Body > 0 and C_BodyLo > hl2 and C_DnShadow >= C_Factor * C_Body and not C_HasUpShadow
+    if C_DownTrend
+        C_HammerBullish := true
+alertcondition(C_HammerBullish, title = "Hammer – Bullish", message = "New Hammer – Bullish pattern detected")
+if C_HammerBullish  and  HammerInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishHammer = "Çekiç-Boğa mum çubukları, bir menkul kıymetin açılıştan sonra aşağıya doğru hareket etmesi, ancak gün içi en düşük seviyenin üzerinde kapanışa doğru toparlanmaya devam etmesiyle oluşur. Elinizde kalan şamdan, uzun çubuk benzeri bir şekle iliştirilmiş bir kareye benzeyecektir. Bu mum çubuğu, düşüş sırasında oluşursa Çekiç olarak adlandırılır."
+    label.new(bar_index, patternLabelPosLow, text="Çekiç-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishHammer)
+C_HangingManBearishNumberOfCandles = 1
+C_HangingManBearish = false
+if C_SmallBody and C_Body > 0 and C_BodyLo > hl2 and C_DnShadow >= C_Factor * C_Body and not C_HasUpShadow
+	if C_UpTrend
+	    C_HangingManBearish := true
+alertcondition(C_HangingManBearish, title = "Hanging Man – Bearish", message = "New Hanging Man – Bearish pattern detected")
+if C_HangingManBearish  and  HangingManInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishHangingMan = "Asılı Adam-Ayı; belirli bir menkul kıymet, açılıştan sonra belirgin bir şekilde aşağıya doğru hareket ederse ancak gün içi en düşük seviyenin üzerinde kapanmaya devam ederse, bir Asılı Adam mum çubuğu oluşacaktır. Şamdan, uzun bir çubuk benzeri şekle iliştirilmiş bir kareye benzeyecektir. Mum çubuğu bir ilerleme sırasında oluşursa Asılan Adam olarak anılır."
+    label.new(bar_index, patternLabelPosHigh, text="Asılı Adam-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishHangingMan)
+C_ShootingStarBearishNumberOfCandles = 1
+C_ShootingStarBearish = false
+if C_SmallBody and C_Body > 0 and C_BodyHi < hl2 and C_UpShadow >= C_Factor * C_Body and not C_HasDnShadow
+	if C_UpTrend
+	    C_ShootingStarBearish := true
+alertcondition(C_ShootingStarBearish, title = "Shooting Star – Bearish", message = "New Shooting Star – Bearish pattern detected")
+if C_ShootingStarBearish  and  ShootingStarInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishShootingStar = "Kayan Yıldız-Ayı ; tek günlük formasyon bir yükseliş trendi sırasında ortaya çıkabilir ve yüksek bir seviyeden açılabilirken, açılış noktasına yakın bir yerde kapanır. Aynı zamanda çok daha yüksek seviyelerde işlem görüyor. Doğası gereği düşüş eğilimlidir ancak Ters Çekiç'e benzemektedir."
+    label.new(bar_index, patternLabelPosHigh, text="Kayan Yıldız-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishShootingStar)
+C_InvertedHammerBullishNumberOfCandles = 1
+C_InvertedHammerBullish = false
+if C_SmallBody and C_Body > 0 and C_BodyHi < hl2 and C_UpShadow >= C_Factor * C_Body and not C_HasDnShadow
+    if C_DownTrend
+        C_InvertedHammerBullish := true
+alertcondition(C_InvertedHammerBullish, title = "Inverted Hammer – Bullish", message = "New Inverted Hammer – Bullish pattern detected")
+if C_InvertedHammerBullish  and  InvertedHammerInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishInvertedHammer = "Ters Çekiç-Boğa; Düşüş trendindeyseniz açık pozisyon daha düşüktür. Sonunda daha yüksek işlem gördüğünde ancak açılış noktasına yakın bir yerde kapandığında, Çekiç Şamdan'ın ters çevrilmiş bir versiyonu gibi görünecektir. Bu bir günlük yükseliş dönüş formasyonudur."
+    label.new(bar_index, patternLabelPosLow, text="Ters Çekiç-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishInvertedHammer)
+C_MorningStarBullishNumberOfCandles = 3
+C_MorningStarBullish = false
+if C_LongBody[2] and C_SmallBody[1] and C_LongBody
+    if C_DownTrend and C_BlackBody[2] and C_BodyHi[1] < C_BodyLo[2] and C_WhiteBody and C_BodyHi >= C_BodyMiddle[2] and C_BodyHi < C_BodyHi[2] and C_BodyHi[1] < C_BodyLo
+        C_MorningStarBullish := true
+alertcondition(C_MorningStarBullish, title = "Morning Star – Bullish", message = "New Morning Star – Bullish pattern detected")
+if C_MorningStarBullish  and  MorningStarInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishMorningStar = "Sabah Yıldızı ; Üç mum çubuğundan oluşan üç günlük bir yükseliş dönüş formasyonu şuna benzer: İlki, mevcut düşüş trendini uzatan uzun gövdeli bir kırmızı mumdur. Daha sonra açıkta boşluk bırakan kısa, orta bir mum gelir. Bunu, açıkta yukarı doğru açılan ve ilk günkü gövdenin orta noktasının üzerinde kapanan uzun gövdeli yeşil bir mum gelir."
+    label.new(bar_index, patternLabelPosLow, text="Sabah Yıldızı-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishMorningStar)
+C_EveningStarBearishNumberOfCandles = 3
+C_EveningStarBearish = false
+if C_LongBody[2] and C_SmallBody[1] and C_LongBody
+    if C_UpTrend and C_WhiteBody[2] and C_BodyLo[1] > C_BodyHi[2] and C_BlackBody and C_BodyLo <= C_BodyMiddle[2] and C_BodyLo > C_BodyLo[2] and C_BodyLo[1] > C_BodyHi
+        C_EveningStarBearish := true
+alertcondition(C_EveningStarBearish, title = "Evening Star – Bearish", message = "New Evening Star – Bearish pattern detected")
+if C_EveningStarBearish  and  EveningStarInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishEveningStar = "Akşam Yıldızı ; Bu mum çubuğu formasyonu düşüş eğilimi gösteriyor ve uzun gövdeli, yeşil bir mum günüyle yükseliş trendini sürdürüyor. Daha sonra aralıklı ve küçük gövdeli bir mum günü gelir ve aşağı yönlü bir kapanışla tamamlanır. Kapanış ilk günün orta noktasının altında gerçekleşecek."
+    label.new(bar_index, patternLabelPosHigh, text="Akşam Yıldızı-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishEveningStar)
+C_MarubozuWhiteBullishNumberOfCandles = 1
+C_MarubozuShadowPercentWhite = 5.0
+C_MarubozuWhiteBullish = C_WhiteBody and C_LongBody and C_UpShadow <= C_MarubozuShadowPercentWhite/100*C_Body and C_DnShadow <= C_MarubozuShadowPercentWhite/100*C_Body and C_WhiteBody
+alertcondition(C_MarubozuWhiteBullish, title = "Marubozu White – Bullish", message = "New Marubozu White – Bullish pattern detected")
+if C_MarubozuWhiteBullish  and  MarubozuWhiteInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishMarubozuWhite = "Marubozu Beyaz Mum, açılışta da kapanışta da mum gövdesinden uzanan gölgesi olmayan bir mumdur. Marubozu Japoncada 'yakın kesilmiş'anlamına gelir. Diğer kaynaklar buna Kel veya Tıraşlı Kafa Mumu diyebilir."
+    label.new(bar_index, patternLabelPosLow, text="Beyaz Marubozu", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishMarubozuWhite)
+C_MarubozuBlackBearishNumberOfCandles = 1
+C_MarubozuShadowPercentBearish = 5.0
+C_MarubozuBlackBearish = C_BlackBody and C_LongBody and C_UpShadow <= C_MarubozuShadowPercentBearish/100*C_Body and C_DnShadow <= C_MarubozuShadowPercentBearish/100*C_Body and C_BlackBody
+alertcondition(C_MarubozuBlackBearish, title = "Marubozu Black – Bearish", message = "New Marubozu Black – Bearish pattern detected")
+if C_MarubozuBlackBearish  and  MarubozuBlackInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishMarubozuBlack = "Marubozu Siyah; Kırmızı gövdeli mumdan açılışta, kapanışta hatta Her İkisi'nde uzanan, gölgesi olmayan bir şamdandır. Japonca'da bu isim 'yakın kırpılmış' anlamına gelir. Şamdan ayrıca Kel veya Tıraşlı Kafa olarak da adlandırılabilir."
+    label.new(bar_index, patternLabelPosHigh, text="Siyah Marubozu", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishMarubozuBlack)
+C_DojiNumberOfCandles = 1
+C_DragonflyDoji = C_IsDojiBody and C_UpShadow <= C_Body
+C_GravestoneDojiOne = C_IsDojiBody and C_DnShadow <= C_Body
+alertcondition(C_Doji and not C_DragonflyDoji and not C_GravestoneDojiOne, title = "Doji", message = "New Doji pattern detected")
+if C_Doji and not C_DragonflyDoji and not C_GravestoneDojiOne and DojiInput  and moving_ok
+    var ttDoji = "Doji ; Bir menkul kıymetin açılış ve kapanış değerleri aslında birbirine eşit olduğunda, bir doji mumu oluşur. Her İkisinin üst ve alt gölgelerinin uzunluğu değişebilir, bu da elinizde kalan mum çubuğunun bir haça, ters bir haça veya bir artı işaretine benzemesine neden olur. Doji mumları, alıcı-satıcı kararsızlığının bir tür çekişme içinde sona erdiğini gösteriyor. Seans sırasında fiyat açılış seviyesinin üstüne veya altına doğru hareket ettikçe kapanış da açılış seviyesinde veya ona yakın olur."
+    label.new(bar_index, patternLabelPosLow, text="Doji", style=label.style_label_up, color = label_color_neutral, textcolor=color.white, tooltip = ttDoji)
+C_GravestoneDojiBearishNumberOfCandles = 1
+C_GravestoneDojiBearish = C_IsDojiBody and C_DnShadow <= C_Body
+alertcondition(C_GravestoneDojiBearish, title = "Graveston Doji – Bearish", message = "New Gravestone Doji – Bearish pattern detected")
+if C_GravestoneDojiBearish  and  GravestoneDojiInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishGravestoneDoji = "Mezar Taşı Dojisi ; Bir doji günün en düşük noktasında olduğunda veya buna yakın olduğunda bir doji çizgisi gelişecektir."
+    label.new(bar_index, patternLabelPosHigh, text="Mezartaşı Doji", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishGravestoneDoji)
+C_DragonflyDojiBullishNumberOfCandles = 1
+C_DragonflyDojiBullish = C_IsDojiBody and C_UpShadow <= C_Body
+alertcondition(C_DragonflyDojiBullish, title = "Dragonfly Doji – Bullish", message = "New Dragonfly Doji – Bullish pattern detected")
+if C_DragonflyDojiBullish  and  DragonflyDojiInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishDragonflyDoji = "Yusufçuk Doji ; diğer Doji günlerine benzer şekilde, bu özel Doji de düzenli olarak piyasanın önemli anlarında karşımıza çıkıyor. Bu, Her İkisinin açılış ve kapanış fiyatının belirli bir günün en yüksek seviyesinde olduğu spesifik bir Dojidir."
+    label.new(bar_index, patternLabelPosLow, text="Yusufçuk Doji", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishDragonflyDoji)
+C_HaramiCrossBullishNumberOfCandles = 2
+C_HaramiCrossBullish = C_LongBody[1] and C_BlackBody[1] and C_DownTrend[1] and C_IsDojiBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+alertcondition(C_HaramiCrossBullish, title = "Harami Cross – Bullish", message = "New Harami Cross – Bullish pattern detected")
+if C_HaramiCrossBullish  and  HaramiCrossInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishHaramiCross = "Harami Kros ; Bu mum çubuğu formasyonu Harami Boğa formasyonunun bir varyasyonudur. Düşüş trendi sırasında bulunur. İki günlük mum çubuğu formasyonu, bir zamanlar kırmızı gövdeli bir mumun gövdesinin tamamıyla çevrelenmiş bir Doji mumundan oluşur."
+    label.new(bar_index, patternLabelPosLow, text="Harami Kros-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishHaramiCross)
+C_HaramiCrossBearishNumberOfCandles = 2
+C_HaramiCrossBearish = C_LongBody[1] and C_WhiteBody[1] and C_UpTrend[1] and C_IsDojiBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+alertcondition(C_HaramiCrossBearish, title = "Harami Cross – Bearish", message = "New Harami Cross – Bearish pattern detected")
+if C_HaramiCrossBearish  and  HaramiCrossInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishHaramiCross = "Harami Kros ; Bu mum çubuğu formasyonu Harami Ayı formasyonunun bir varyasyonudur. Yükseliş trendi sırasında bulunur. Bu, bir zamanlar yeşil gövdeli bir mum olan gövdenin tamamen içine alınmış bir Doji mumunun yer aldığı iki günlük bir mum çubuğu formasyonudur. Doji, satıcıların aklına bir miktar kararsızlığın girdiğini gösteriyor ve formasyon, trendin tersine dönebileceğinin ipuçlarını veriyor."
+    label.new(bar_index, patternLabelPosHigh, text="Harami Kros-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishHaramiCross)
+C_HaramiBullishNumberOfCandles = 2
+C_HaramiBullish = C_LongBody[1] and C_BlackBody[1] and C_DownTrend[1] and C_WhiteBody and C_SmallBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+alertcondition(C_HaramiBullish, title = "Harami – Bullish", message = "New Harami – Bullish pattern detected")
+if C_HaramiBullish  and  HaramiInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishHarami = "Harami ;bu iki günlük mum çubuğu formasyonu, bir zamanlar kırmızı gövdeli bir mumun gövdesinin tamamıyla çevrelenmiş küçük gövdeli bir yeşil mumdan oluşur."
+    label.new(bar_index, patternLabelPosLow, text="Harami-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishHarami)
+C_HaramiBearishNumberOfCandles = 2
+C_HaramiBearish = C_LongBody[1] and C_WhiteBody[1] and C_UpTrend[1] and C_BlackBody and C_SmallBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+alertcondition(C_HaramiBearish, title = "Harami – Bearish", message = "New Harami – Bearish pattern detected")
+if C_HaramiBearish  and  HaramiInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishHarami = "Harami ; bir zamanlar yeşil gövdeli bir mum olan gövdeyi tamamen kaplayan küçük, kırmızı gövdeli bir mumun bulunduğu iki günlük bir mum çubuğu formasyonudur."
+    label.new(bar_index, patternLabelPosHigh, text="BH", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishHarami)
+C_LongLowerShadowBullishNumberOfCandles = 1
+C_LongLowerShadowPercent = 75.0
+C_LongLowerShadowBullish = C_DnShadow > C_Range/100*C_LongLowerShadowPercent
+alertcondition(C_LongLowerShadowBullish, title = "Long Lower Shadow – Bullish", message = "New Long Lower Shadow – Bullish pattern detected")
+if C_LongLowerShadowBullish  and  LongLowerShadowInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishLongLowerShadow = "Uzun Alt Gölge ; Seansın ilk bölümünde satıcı hakimiyetini göstermek için mum çubukları uzun alt gölgeler ve kısa üst gölgelerle ortaya çıkacak, dolayısıyla fiyatlar düşecek."
+    label.new(bar_index, patternLabelPosLow, text="Uzun Alt Gölge", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishLongLowerShadow)
+C_LongUpperShadowBearishNumberOfCandles = 1
+C_LongShadowPercent = 75.0
+C_LongUpperShadowBearish = C_UpShadow > C_Range/100*C_LongShadowPercent
+alertcondition(C_LongUpperShadowBearish, title = "Long Upper Shadow – Bearish", message = "New Long Upper Shadow – Bearish pattern detected")
+if C_LongUpperShadowBearish  and  LongUpperShadowInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishLongUpperShadow = "Uzun Üst Gölge;Seansın ilk bölümünde alıcı hakimiyetini göstermek için mum çubukları uzun üst gölgelerin yanı sıra kısa alt gölgelerle birlikte sunulacak ve sonuç olarak teklif fiyatları yükselecek."
+    label.new(bar_index, patternLabelPosHigh, text="Uzun Üst Gölge", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishLongUpperShadow)
+C_SpinningTopWhiteNumberOfCandles = 1
+C_SpinningTopWhitePercent = 34.0
+C_IsSpinningTopWhite = C_DnShadow >= C_Range / 100 * C_SpinningTopWhitePercent and C_UpShadow >= C_Range / 100 * C_SpinningTopWhitePercent and not C_IsDojiBody
+C_SpinningTopWhite = C_IsSpinningTopWhite and C_WhiteBody
+alertcondition(C_SpinningTopWhite, title = "Spinning Top White", message = "New Spinning Top White pattern detected")
+if C_SpinningTopWhite and SpinningTopWhiteInput and moving_ok
+    var ttSpinningTopWhite = "Beyaz topaç; küçük, yeşil gövdeli ve mum gövdelerinin uzunluğunu aşan gölgelere (üst ve alt) sahip olan mum çubuğu çizgileridir. Genellikle alıcı ve satıcı arasındaki kararsızlığa işaret ederler."
+    label.new(bar_index, patternLabelPosLow, text="Beyaz Topaç", style=label.style_label_up, color = label_color_neutral, textcolor=color.white, tooltip = ttSpinningTopWhite)
+C_SpinningTopBlackNumberOfCandles = 1
+C_SpinningTopBlackPercent = 34.0
+C_IsSpinningTop = C_DnShadow >= C_Range / 100 * C_SpinningTopBlackPercent and C_UpShadow >= C_Range / 100 * C_SpinningTopBlackPercent and not C_IsDojiBody
+C_SpinningTopBlack = C_IsSpinningTop and C_BlackBody
+alertcondition(C_SpinningTopBlack, title = "Spinning Top Black", message = "New Spinning Top Black pattern detected")
+if C_SpinningTopBlack and SpinningTopBlackInput and moving_ok
+    var ttSpinningTopBlack = "Siyah Topaç, küçük, kırmızı gövdeli ve mum gövdelerinin uzunluğunu aşan gölgelere (üst ve alt) sahip olan mum çubuğu çizgileridir. Genellikle kararsızlığa işaret ederler."
+    label.new(bar_index, patternLabelPosLow, text="Siyah Topaç", style=label.style_label_up, color = label_color_neutral, textcolor=color.white, tooltip = ttSpinningTopBlack)
+C_ThreeWhiteSoldiersBullishNumberOfCandles = 3
+C_3WSld_ShadowPercent = 5.0
+C_3WSld_HaveNotUpShadow = C_Range * C_3WSld_ShadowPercent / 100 > C_UpShadow
+C_ThreeWhiteSoldiersBullish = false
+if C_LongBody and C_LongBody[1] and C_LongBody[2]
+    if C_WhiteBody and C_WhiteBody[1] and C_WhiteBody[2]
+        C_ThreeWhiteSoldiersBullish := close > close[1] and close[1] > close[2] and open < close[1] and open > open[1] and open[1] < close[2] and open[1] > open[2] and C_3WSld_HaveNotUpShadow and C_3WSld_HaveNotUpShadow[1] and C_3WSld_HaveNotUpShadow[2]
+alertcondition(C_ThreeWhiteSoldiersBullish, title = "Three White Soldiers – Bullish", message = "New Three White Soldiers – Bullish pattern detected")
+if C_ThreeWhiteSoldiersBullish  and  ThreeWhiteSoldiersInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishThreeWhiteSoldiers = "Üç Beyaz Asker; yukarı yönlü dönüş formasyonu, birbirini takip eden üç uzun gövdeli yeşil mumdan oluşur. Her biri gövdede kendisinden önce açılıyor ve kapanışı günlük en yüksek seviyesine yakın."
+    label.new(bar_index, patternLabelPosLow, text="Üç Beyaz Asker", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishThreeWhiteSoldiers)
+C_ThreeBlackCrowsBearishNumberOfCandles = 3
+C_3BCrw_ShadowPercent = 5.0
+C_3BCrw_HaveNotDnShadow = C_Range * C_3BCrw_ShadowPercent / 100 > C_DnShadow
+C_ThreeBlackCrowsBearish = false
+if C_LongBody and C_LongBody[1] and C_LongBody[2]
+    if C_BlackBody and C_BlackBody[1] and C_BlackBody[2]
+        C_ThreeBlackCrowsBearish := close < close[1] and close[1] < close[2] and open > close[1] and open < open[1] and open[1] > close[2] and open[1] < open[2] and C_3BCrw_HaveNotDnShadow and C_3BCrw_HaveNotDnShadow[1] and C_3BCrw_HaveNotDnShadow[2]
+alertcondition(C_ThreeBlackCrowsBearish, title = "Three Black Crows – Bearish", message = "New Three Black Crows – Bearish pattern detected")
+if C_ThreeBlackCrowsBearish  and  ThreeBlackCrowsInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishThreeBlackCrows = "Üç Kara Karga, birbirini takip eden üç uzun, kırmızı gövdeli mumdan oluşan düşüş yönlü bir dönüş formasyonudur. Bu mumların her biri için, her gün bir önceki günün gövdesi içinde açılır ve ya en düşük seviyesinde ya da ona yakın bir seviyede kapanır."
+    label.new(bar_index, patternLabelPosHigh, text="Üç Siyah Karga", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishThreeBlackCrows)
+C_EngulfingBullishNumberOfCandles = 2
+C_EngulfingBullish = C_DownTrend and C_WhiteBody and C_LongBody and C_BlackBody[1] and C_SmallBody[1] and close >= open[1] and open <= close[1] and ( close > open[1] or open < close[1] )
+alertcondition(C_EngulfingBullish, title = "Engulfing – Bullish", message = "New Engulfing – Bullish pattern detected")
+if C_EngulfingBullish  and  EngulfingInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishEngulfing = "Yutan Boğa; Belirli bir düşüş eğiliminin sonunda, büyük olasılıkla bir tersine dönüş modeli ortaya çıkacaktır. İlk günü ayırt etmek için, bu mum çubuğu formasyonu küçük bir gövde kullanır ve ardından mum gövdesinin önceki günkü gövdeyi tamamen geçtiği ve trendin ters yönünde kapandığı bir gün gelir. Dış ters grafik formasyonuna benzer olmasına rağmen, bu formasyonun aralığın (yüksekten düşüğe) tamamen geçmesi gerekli değildir, yalnızca açılış ve kapanışı geçmesi gerekir."
+    label.new(bar_index, patternLabelPosLow, text="Yutan Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishEngulfing)
+C_EngulfingBearishNumberOfCandles = 2
+C_EngulfingBearish = C_UpTrend and C_BlackBody and C_LongBody and C_WhiteBody[1] and C_SmallBody[1] and close <= open[1] and open >= close[1] and ( close < open[1] or open > close[1] )
+alertcondition(C_EngulfingBearish, title = "Engulfing – Bearish", message = "New Engulfing – Bearish pattern detected")
+if C_EngulfingBearish  and  EngulfingInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishEngulfing = "Yutan Ayı; Belirli bir yükseliş trendinin sonunda, büyük olasılıkla bir tersine dönüş modeli ortaya çıkacaktır. İlk gün boyunca bu mum çubuğu formasyonunda küçük bir gövde kullanılır. Bunu, mum gövdesinin bir önceki günün gövdesini tamamen geride bıraktığı ve trendin ters yönünde kapandığı bir gün takip eder. Her ne kadar dış ters grafik formasyonuna benzer olsa da, bu formasyonun aralığın (yüksekten düşüğe) tamamen geçmesi gerekli değildir, yalnızca açılış ve kapanışı geçmesi gerekir."
+    label.new(bar_index, patternLabelPosHigh, text="Yutan Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishEngulfing)
+C_AbandonedBabyBullishNumberOfCandles = 3
+C_AbandonedBabyBullish = C_DownTrend[2] and C_BlackBody[2] and C_IsDojiBody[1] and low[2] > high[1] and C_WhiteBody and high[1] < low
+alertcondition(C_AbandonedBabyBullish, title = "Abandoned Baby – Bullish", message = "New Abandoned Baby – Bullish pattern detected")
+if C_AbandonedBabyBullish  and  AbandonedBabyInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishAbandonedBaby = "Terkedilmiş Bebek; mum çubuğu formasyonu, ters dönüş formasyonları açısından oldukça nadirdir. Desenin ilki büyük bir kuş tüyü mumdur. Daha sonra, önündeki mumun altında boşluk bırakan bir doji mumu gelir. Daha sonra doji mumunu daha da yükseğe açılan ve hızla yukarı doğru hareket eden başka bir mum takip eder."
+    label.new(bar_index, patternLabelPosLow, text="Terk Edilmiş Bebek-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishAbandonedBaby)
+C_AbandonedBabyBearishNumberOfCandles = 3
+C_AbandonedBabyBearish = C_UpTrend[2] and C_WhiteBody[2] and C_IsDojiBody[1] and high[2] < low[1] and C_BlackBody and low[1] > high
+alertcondition(C_AbandonedBabyBearish, title = "Abandoned Baby – Bearish", message = "New Abandoned Baby – Bearish pattern detected")
+if C_AbandonedBabyBearish  and  AbandonedBabyInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishAbandonedBaby = "Terkedilmiş Bebek-Ayı yönlü terkedilmiş bebek, genellikle güvenlik fiyatı açısından aşağı yönlü bir eğilimin sinyalini veren özel bir mum çubuğu formasyonudur. Doji benzeri bir mumun en düşük fiyatı ile bir önceki günün mum çubuğu arasında bir boşluk oluştuğunda oluşur. Önceki şamdan yeşildir, uzundur ve küçük gölgeleri vardır. Doji mumunun arkasında, en düşük fiyat noktası ile bir sonraki mumun en yüksek fiyat noktası arasındaki, kırmızı, uzun ve aynı zamanda küçük gölgeleri olan bir boşluk vardır. Terkedilmiş bebek deseni etkisi yaratmak için doji mum gölgelerinin birinci ve üçüncü gün gölgelerinin altında veya üstünde tamamen boşluk bırakması gerekir."
+    label.new(bar_index, patternLabelPosHigh, text="Terk Edilmiş Bebek-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishAbandonedBaby)
+C_TriStarBullishNumberOfCandles = 3
+C_3DojisBullish = C_Doji[2] and C_Doji[1] and C_Doji
+C_BodyGapUpBullish = C_BodyHi[1] < C_BodyLo
+C_BodyGapDnBullish = C_BodyLo[1] > C_BodyHi
+C_TriStarBullish = C_3DojisBullish and C_DownTrend[2] and C_BodyGapDnBullish[1] and C_BodyGapUpBullish
+alertcondition(C_TriStarBullish, title = "Tri-Star – Bullish", message = "New Tri-Star – Bullish pattern detected")
+if C_TriStarBullish  and  TriStarInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishTriStar = "Üçlü Yıldız ; Uzatılmış bir düşüş trendinin sonunda üç doji şamdan hemen arka arkaya gerçekleştiğinde, yükseliş yönlü bir TriStar şamdan formasyonu oluşabilir. İlk doji mumu boğa ve ayı arasındaki kararsızlığa işaret eder. İkinci doji öncü trend yönünde boşluk bırakır. Üçüncüsü, mum çubuğu trendin tersi yönde açıldığında piyasanın tutumu değişir. Her doji mumunun, tümü nispeten sığ olan ve volatilitede geçici bir azalmaya işaret eden bir gölgesi vardır."
+    label.new(bar_index, patternLabelPosLow, text="Üç Yıldız-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishTriStar)
+C_TriStarBearishNumberOfCandles = 3
+C_3Dojis = C_Doji[2] and C_Doji[1] and C_Doji
+C_BodyGapUp = C_BodyHi[1] < C_BodyLo
+C_BodyGapDn = C_BodyLo[1] > C_BodyHi
+C_TriStarBearish = C_3Dojis and C_UpTrend[2] and C_BodyGapUp[1] and C_BodyGapDn
+alertcondition(C_TriStarBearish, title = "Tri-Star – Bearish", message = "New Tri-Star – Bearish pattern detected")
+if C_TriStarBearish  and  TriStarInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishTriStar = "Üç Yıldız ; özel formasyon, uzun bir yükseliş trendinin sonunda üç doji mum çubuğunun hemen art arda ortaya çıkmasıyla oluşabilir. İlk doji mumu boğa ve ayı arasındaki kararsızlığa işaret eder. İkinci doji öncü trend yönünde boşluk bırakır. Üçüncüsü, mum çubuğu trendin tersi yönde açıldığında piyasanın tutumu değişir. Her doji mumunun, tümü nispeten sığ olan ve volatilitede geçici bir azalmaya işaret eden bir gölgesi vardır."
+    label.new(bar_index, patternLabelPosHigh, text="Üç Yıldız Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishTriStar)
+C_KickingBullishNumberOfCandles = 2
+C_MarubozuShadowPercent = 5.0
+C_Marubozu = C_LongBody and C_UpShadow <= C_MarubozuShadowPercent/100*C_Body and C_DnShadow <= C_MarubozuShadowPercent/100*C_Body
+C_MarubozuWhiteBullishKicking = C_Marubozu and C_WhiteBody
+C_MarubozuBlackBullish = C_Marubozu and C_BlackBody
+C_KickingBullish = C_MarubozuBlackBullish[1] and C_MarubozuWhiteBullishKicking and high[1] < low
+alertcondition(C_KickingBullish, title = "Kicking – Bullish", message = "New Kicking – Bullish pattern detected")
+if C_KickingBullish  and  KickingInput and (("Bullish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBullishKicking = "Tepen Mumlar-Boğa nİlk gün mum çubuğu, neredeyse hiç üst veya alt gölgesi olmayan ve fiyatın günün en yüksek seviyesinden açılıp günün en düşük seviyesinde kapandığı, aşağı yönlü bir marubozu mum çubuğudur. İkinci gün, neredeyse hiçbir üst veya alt gölgenin olmadığı ve fiyatın günün en düşük seviyesinden açılıp günün en yüksek seviyesinde kapandığı yükseliş marubozu formasyonudur. Ayrıca ikinci gün büyük bir boşluk bırakarak önceki günkü açılış fiyatının üzerinde açılıyor. Japonların dediği gibi bu boşluk veya pencere, birinci gün ile ikinci günün yükseliş mum çubukları arasında yer alır."
+    label.new(bar_index, patternLabelPosLow, text="Tepen Mumlar-Boğa", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishKicking)
+C_KickingBearishNumberOfCandles = 2
+C_MarubozuBullishShadowPercent = 5.0
+C_MarubozuBearishKicking = C_LongBody and C_UpShadow <= C_MarubozuBullishShadowPercent/100*C_Body and C_DnShadow <= C_MarubozuBullishShadowPercent/100*C_Body
+C_MarubozuWhiteBearish = C_MarubozuBearishKicking and C_WhiteBody
+C_MarubozuBlackBearishKicking = C_MarubozuBearishKicking and C_BlackBody
+C_KickingBearish = C_MarubozuWhiteBearish[1] and C_MarubozuBlackBearishKicking and low[1] > high
+alertcondition(C_KickingBearish, title = "Kicking – Bearish", message = "New Kicking – Bearish pattern detected")
+if C_KickingBearish  and  KickingInput and (("Bearish" == CandleType) or CandleType == "Her İkisi") and moving_ok
+
+    var ttBearishKicking = "Tepen Mumlar-Ayı; Aşağı yönlü bir tekme paterni meydana gelecek ve ardından yeni bir düşüş trendinin tersine döneceği sinyali verilecek. İlk günün şamdanı yükselişe geçen bir marubozu. İkinci gün büyük bir boşluk bırakarak önceki günün açılış fiyatının altında açılır. Birinci ve ikinci gündeki düşüş mum çubukları arasında bir boşluk var."
+    label.new(bar_index, patternLabelPosHigh, text="Tepen Mumlar-Ayı", style=label.style_label_down, color = label_color_bearish, textcolor=color.white, tooltip = ttBearishKicking)
+    var ttAllCandlestickPatterns = "All Candlestick Patterns\n"
+    label.new(bar_index, patternLabelPosLow, text="Collection", style=label.style_label_up, color = label_color_neutral, textcolor=color.white, tooltip = ttAllCandlestickPatterns)
+
+// Kullanıcı girişi
+avgup = input.int(title="Up TEMA Length", defval=34, minval=1, maxval=100 , group = "Heikin-Ashi")
+avgdn = input.int(title="Down TEMA Length", defval=34, minval=1, maxval=100, group = "Heikin-Ashi")
+overlayMode = input.bool(defval=false, title="Overlay mode (color bars)?", group = "Heikin-Ashi")
+
+
+// TEMA hesaplama fonksiyonu
+calc_tema(src, length) =>
+    ema1ha = ta.ema(src, length)
+    ema2ha = ta.ema(ema1ha, length)
+    ema3ha = ta.ema(ema2ha, length)
+    3 * (ema1ha - ema2ha) + ema3ha
+
+// ZLEMA hesaplama fonksiyonu
+calc_zltema(src, length) =>
+    tma1 = calc_tema(src, length)
+    tma2 = calc_tema(tma1, length)
+    diff = tma1 - tma2
+    tma1 + diff
+
+// Heikin Ashi hesaplamaları için başlangıç değeri
+var float haO = na
+
+// Heikin Ashi hesaplamaları
+haO := na(haO[1]) ? (ohlc4[1] + ohlc4) / 2 : (ohlc4[1] + haO[1]) / 2
+haC = (ohlc4 + haO + math.max(high, haO) + math.min(low, haO)) / 4
+
+// Up TEMA hesaplamaları
+upTMA1 = calc_zltema(haC, avgup)
+upTMA2 = calc_zltema(upTMA1, avgup)
+upDiff = upTMA1 - upTMA2
+upZlHa = upTMA1 + upDiff
+upTMA12 = calc_zltema(hl2, avgup)
+upTMA22 = calc_zltema(upTMA12, avgup)
+upDiff2 = upTMA12 - upTMA22
+upZlCl = upTMA12 + upDiff2
+upZlDiff = upZlCl - upZlHa
+upKeep1 = (haC >= haO) and (haC[1] >= haO[1])
+upKeep2 = upZlDiff >= 0
+upKeeping = (upKeep1 or upKeep2)
+upKeepAll = upKeeping or (nz(upKeeping[1]) and (close >= open) or close >= close[1])
+upKeep3 = (math.abs(close - open) < (high - low) * 0.35 and high >= (low[1]))
+upTrend = upKeepAll or (nz(upKeepAll[1]) and upKeep3)
+
+// Down TEMA hesaplamaları
+dnTMA1 = calc_zltema(haC, avgdn)
+dnTMA2 = calc_zltema(dnTMA1, avgdn)
+dnDiff = dnTMA1 - dnTMA2
+dnZlHa = dnTMA1 + dnDiff
+dnTMA12 = calc_zltema(hl2, avgdn)
+dnTMA22 = calc_zltema(dnTMA12, avgdn)
+dnDiff2 = dnTMA12 - dnTMA22
+dnZlCl = dnTMA12 + dnDiff2
+dnZlDiff = dnZlCl - dnZlHa
+dnKeep1 = haC < haO and (haC[1] < haO[1])
+dnKeep2 = dnZlDiff < 0
+dnKeep3 = math.abs(close - open) < (high - low) * 0.35 and low <= high[1]
+dnKeeping = dnKeep1 or dnKeep2
+dnKeepAll = dnKeeping or (nz(dnKeeping[1]) and (close < open) or (close < close[1]))
+dnTrend = (dnKeepAll or (nz(dnKeepAll[1]) and dnKeep3)) ? 1 : 0
+
+// Trend durumu
+upw = dnTrend == 0 and nz(dnTrend[1]) and upTrend
+dnw = upTrend == 0 and nz(upTrend[1]) and dnTrend
+
+// HACO değişkenini tanımlama ve hesaplama
+var float haco = na
+haco := upw ? 1 : (dnw ? -1 : nz(haco[1]))
+haco_c = haco > 0 ? color.green : color.red
+
+// Plot ve bar rengi
+plot(moving_ok_ha and not overlayMode ? haco : na, style=plot.style_columns, color=haco_c , title = "Heikin-Ashi")
+barcolor(overlayMode ? haco_c : na , title = "Heikin-Ashi")
