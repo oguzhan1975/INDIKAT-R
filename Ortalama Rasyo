@@ -1,0 +1,77 @@
+//@version=5
+indicator(title="Ortalama Rasyo", shorttitle="Ortalama Rasyo", overlay=false)
+
+length = input.int(751, title="Ortalama")
+hisse_fiyati = close
+
+//ozkaynak
+TEQ = request.financial(syminfo.tickerid, "TOTAL_EQUITY", "FQ")
+
+//piyasa_degeri
+TSO = request.financial(syminfo.tickerid, "TOTAL_SHARES_OUTSTANDING", "FQ")
+MarketCap = TSO * hisse_fiyati
+
+//fd/favök
+hisse_fdfavok = request.financial(syminfo.tickerid, "ENTERPRISE_VALUE_EBITDA", "FQ")
+hisse_fdfavok2 = ta.sma(hisse_fdfavok , length)
+
+//hisse fk
+EPS = request.financial(syminfo.tickerid, "EARNINGS_PER_SHARE", "TTM")
+PriceEarningsRatio = hisse_fiyati / EPS
+PriceEarningsRatio2 = ta.sma(PriceEarningsRatio,length)
+
+//hisse_pddd
+hisse_pddd = MarketCap / TEQ
+hisse_pddd2 = ta.sma(hisse_pddd,length)
+
+//// semihtat7 tarafından hazırlanmıştır.
+
+
+metinolustur2(x) =>
+    metin = str.tostring(math.round(x,2))
+    metin
+
+var mobiletablo = table.new(position.middle_right,2,9,border_width=1,border_color=color.gray, frame_color=color.gray, frame_width=1)
+
+if barstate.islast
+
+
+
+    g1="Hisse F/K"
+    g2="Ortalama F/K"
+    g3="Hisse PD/DD"
+    g4="Ortalama PD/DD"
+    g5="Hisse FD/FAVÖK"
+    g6="Ortalama FD/FAVÖK"
+    g7="HAZIRLAYAN"
+    text1 = metinolustur2(PriceEarningsRatio)
+    text2 = metinolustur2(PriceEarningsRatio2)
+    text3 = metinolustur2(hisse_pddd)
+    text4 = metinolustur2(hisse_pddd2)
+    text5= metinolustur2(hisse_fdfavok)
+    text6=metinolustur2(hisse_fdfavok2)
+    text7="semihtat7"
+
+    table.cell(mobiletablo,0,0,bgcolor=color.yellow,text_color=color.black, text=g1, text_size = size.small)
+    table.cell(mobiletablo,0,1,bgcolor=color.orange,text_color=color.black, text=g2, text_size = size.small)
+    table.cell(mobiletablo,0,2,bgcolor=color.aqua,text_color=color.black, text=g3, text_size = size.small)
+    table.cell(mobiletablo,0,3,bgcolor=color.blue,text_color=color.black, text=g4, text_size = size.small)
+    table.cell(mobiletablo,0,4,bgcolor=color.black,text_color=color.white, text=g5, text_size = size.small)
+    table.cell(mobiletablo,0,5,bgcolor=color.gray,text_color=color.white, text=g6, text_size = size.small)
+    table.cell(mobiletablo,0,6,bgcolor=color.red,text_color=color.white, text=g7, text_size = size.small)
+
+    
+    table.cell(mobiletablo,1,0,bgcolor=color.yellow,text_color=color.black, text=text1, text_size = size.small)
+    table.cell(mobiletablo,1,1,bgcolor=color.orange,text_color=color.black, text=text2, text_size = size.small)
+    table.cell(mobiletablo,1,2,bgcolor=color.aqua,text_color=color.black, text=text3, text_size = size.small)
+    table.cell(mobiletablo,1,3,bgcolor=color.blue,text_color=color.black, text=text4, text_size = size.small)
+    table.cell(mobiletablo,1,4,bgcolor=color.black,text_color=color.white, text=text5, text_size = size.small)
+    table.cell(mobiletablo,1,5,bgcolor=color.gray,text_color=color.white, text=text6, text_size = size.small)
+    table.cell(mobiletablo,1,6,bgcolor=color.red,text_color=color.white, text=text7, text_size = size.small)
+
+plot(PriceEarningsRatio , color = color.yellow, title = "Hisse F/K" , linewidth = 2)
+plot(PriceEarningsRatio2, color=color.orange , title = "Ortalama F/K" , linewidth = 2)
+plot(hisse_pddd , color =color.aqua , title = "Hisse PD/DD" , linewidth = 2)
+plot(hisse_pddd2 , color=color.blue , title = "Ortalama PD/DD" , linewidth = 2)
+plot(hisse_fdfavok , color=color.black , title = "Hisse FAVÖK" , linewidth = 2)
+plot(hisse_fdfavok2 , color = color.gray , title = "Ortalama FD/FAVÖK" , linewidth = 2)
