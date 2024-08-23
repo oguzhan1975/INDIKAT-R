@@ -1,0 +1,1066 @@
+//@version=5
+indicator('Nht MPTarama ', shorttitle='MegaPanel v3.1', overlay=true, format=format.price, precision=8, max_bars_back=1200)
+/////
+// Kullanıcı girdileri
+Nht = input(false, 'Tarama Yapılsın mı?', group = "Tarama yapmak istediğiniz periyotu seçin")
+grupSec = input.string(defval='1', options=['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', 'ÖZEL LİSTE'], group='Taraması yapılacak 40\'arlı gruplardan birini seçin', title='Grup seç')
+per = input.timeframe(defval='', title='PERİYOT', group = "Tarama yapmak istediğiniz periyotu seçin")
+loc = input.int(defval=20, title='Konum Ayarı', minval = -300,maxval = 500 , step = 5,  group='Tablonun konumunu belirleyin', display = display.all-display.price_scale-display.status_line)
+STatrPeriod = input(10, "SuperTrend ATR Uzunluğu")
+STfactor = input.float(3.0, "SuperTrend Faktörü", step = 0.01)
+StochRSILength = input.int(defval=14, title='Stoch RSI Periyodu', minval=1)
+StochRSIKSmoothing = input.int(defval=3, title='Stoch RSI K Düzgünleştirme', minval=1)
+StochRSIDSmoothing = input.int(defval=3, title='Stoch RSI D Düzgünleştirme', minval=1)
+MACD_fast_length = input(title='MACD Hızlı Uzunluk', defval=12)
+MACD_slow_length = input(title='MACD Yavaş Uzunluk', defval=26)
+MACD_signal_length = input.int(title='MACD Sinyal Düzgünleştirme', minval=1, maxval=50, defval=9)
+FTLength = input.int(9, minval=1, title="Fisher Transform Uzunluğu")
+EMA1 = input.int(defval=20, title='EMA1 Periyodu', minval=1)
+EMA2 = input.int(defval=50, title='EMA2 Periyodu', minval=1)
+EMA3 = input.int(defval=100, title='EMA3 Periyodu', minval=1)
+EMA4 = input.int(defval=200, title='EMA4 Periyodu', minval=1)
+BBLength = input.int(defval=20, title='BB Periyodu', minval=1)
+RSILength = input.int(defval=14, title='RSI Periyodu', minval=1)
+CCILength = input.int(defval=20, title='CCI Periyodu', minval=1)
+MFILength = input.int(defval=14, title='MFI Periyodu', minval=1)
+MOMLength = input.int(defval=10, title='MOM Periyodu', minval=1)
+DMILength = input.int(defval=14, title='DMI Periyodu', minval=1)
+ADXLength = input.int(defval=14, title='ADX Periyodu', minval=1)
+pricePrecision = 8
+percentPrecision = 2
+data(p, x) =>
+    request.security(syminfo.tickerid, p, x)
+
+roundNumber(x) =>
+    factor = math.pow(10, 2)
+    x > 1.00 or x < -1.00 ? int(x * factor) / factor : x
+
+Stringify(x, round, format) =>
+    str.tostring(round ? roundNumber(x) : x, format == 8 ? '0.########' : format == 2 ? '0.00' : '0')
+
+StrPrice(x) =>
+    Stringify(x, true, pricePrecision)
+
+StrPercent(x) =>
+    Stringify(x, false, percentPrecision)
+
+Str(x) =>
+    Stringify(x, false, 0)
+prevDayClose = nz(data('D', close[2]))
+yesterdayClose = nz(data('D', close[1]))
+prevWeekClose = nz(data('W', close[2]))
+lastWeekClose = nz(data('W', close[1]))
+prevMonthClose = nz(data('M', close[2]))
+lastMonthClose = nz(data('M', close[1]))
+prevPrice = close[1]
+currentPrice = close
+priceChange = currentPrice - prevPrice
+priceChangeP = priceChange / prevPrice * 100
+priceChangeClose = currentPrice - yesterdayClose
+priceChangeCloseP = priceChangeClose / yesterdayClose * 100
+prevVol = nz(volume[1])
+currentVol = nz(volume)
+volChange = currentVol - prevVol
+volChangeP = nz(volChange / prevVol * 100)
+OBVBull = ta.obv > ta.obv[1]
+longs = request.security('BITFINEX:BTCUSDLONGS', timeframe.period, close, lookahead=barmerge.lookahead_on)
+shorts = request.security('BITFINEX:BTCUSDSHORTS', timeframe.period, close, lookahead=barmerge.lookahead_on)
+rsi = nz(ta.rsi(close, RSILength))
+cci = nz(ta.cci(close, CCILength))
+mfi = nz(ta.mfi(hlc3, MFILength))
+mom = nz(ta.mom(close, MOMLength))
+sar = ta.sar(0.02, 0.02, 0.2)
+[diplus, diminus, adx] = ta.dmi(DMILength, ADXLength)
+[macd, macdSignal, macdHist] = ta.macd(close, MACD_fast_length, MACD_slow_length, MACD_signal_length)
+stochRSIk = nz(ta.sma(ta.stoch(rsi, rsi, rsi, StochRSILength), StochRSIKSmoothing))
+stochRSId = nz(ta.sma(stochRSIk, StochRSIDSmoothing))
+ema1val = nz(ta.ema(close, EMA1))
+ema2val = nz(ta.ema(close, EMA2))
+ema3val = nz(ta.ema(close, EMA3))
+ema4val = nz(ta.ema(close, EMA4))
+[bbMid, bbUpper, bbLower] = ta.bb(close, BBLength, 2)
+[supertrend, STdirection] = ta.supertrend(STfactor, STatrPeriod)
+FThigh_ = ta.highest(hl2, FTLength)
+FTlow_ = ta.lowest(hl2, FTLength)
+FTround_(val) =>
+    val > .99 ? .999 : val < -.99 ? -.999 : val
+FTvalue = 0.0
+FTvalue := FTround_(.66 * ((hl2 - FTlow_) / (FThigh_ - FTlow_) - .5) + .67 * nz(FTvalue[1]))
+FTfisher = 0.0
+FTfisher := .5 * math.log((1 + FTvalue) / (1 - FTvalue)) + .5 * nz(FTfisher[1])
+FTtrigger = FTfisher[1]
+DprevOpenHTF = request.security(syminfo.tickerid, 'D', open[1], lookahead=barmerge.lookahead_on)
+DprevCloseHTF = request.security(syminfo.tickerid, 'D', close[1], lookahead=barmerge.lookahead_on)
+DprevHighHTF = request.security(syminfo.tickerid, 'D', high[1], lookahead=barmerge.lookahead_on)
+DprevLowHTF = request.security(syminfo.tickerid, 'D', low[1], lookahead=barmerge.lookahead_on)
+DpLevel = (DprevHighHTF + DprevLowHTF + DprevCloseHTF) / 3
+Dr1Level = DpLevel * 2 - DprevLowHTF
+Ds1Level = DpLevel * 2 - DprevHighHTF
+Dr2Level = DpLevel + DprevHighHTF - DprevLowHTF
+Ds2Level = DpLevel - (DprevHighHTF - DprevLowHTF)
+Dr3Level = DpLevel + 2 * (DprevHighHTF - DprevLowHTF)
+Ds3Level = DpLevel - 2 * (DprevHighHTF - DprevLowHTF)
+RSIBull = rsi > rsi[1]
+CCIBull = cci > cci[1]
+MFIBull = mfi > mfi[1]
+MOMBull = mom > mom[1]
+DIBull = diplus > diplus[1]
+MACDBull = macd > macd[1]
+StochRSIBull = stochRSIk > stochRSIk[1]
+FTBull = FTfisher > FTfisher[1]
+EMA1Bull = ema1val > ema1val[1]
+EMA2Bull = ema2val > ema2val[1]
+EMA3Bull = ema3val > ema3val[1]
+EMA4Bull = ema4val > ema4val[1]
+STBull = close > supertrend
+BBBull = close > bbMid
+SARBull = sar < close
+
+global = array.new_int(2)
+OverallBullIndex = 0
+OverallBearIndex = 1
+array.set(global, OverallBullIndex, 0)
+array.set(global, OverallBearIndex, 0)
+
+f_GetDirection(val1, val2) =>
+    val1 > val2 ? 1 : val1 < val2 ? -1 : 0
+
+f_GetArrow(val1, val2) =>
+    val1 > val2 ? '▲' : val1 < val2 ? '▼' : ''
+    
+f_IndicatorLevel(val, min, mid, max) =>
+    val < min ? 'Negatif' : val > max ? 'Pozitif' : val > mid ? 'Pozitif' : val < mid ? 'Negatif' : 'Normal'
+    
+f_Calculate_Sentiment(indicator_1) =>
+    if indicator_1
+        current = array.get(global, OverallBullIndex)
+        array.set(global, OverallBullIndex, current + 1)
+    else
+        current = array.get(global, OverallBearIndex)
+        array.set(global, OverallBearIndex, current + 1)
+
+f_Calculate_Sentiment(RSIBull)
+f_Calculate_Sentiment(CCIBull)
+f_Calculate_Sentiment(MFIBull)
+f_Calculate_Sentiment(MOMBull)
+f_Calculate_Sentiment(DIBull)
+f_Calculate_Sentiment(MACDBull)
+f_Calculate_Sentiment(StochRSIBull)
+f_Calculate_Sentiment(EMA1Bull)
+f_Calculate_Sentiment(EMA2Bull)
+f_Calculate_Sentiment(EMA3Bull)
+f_Calculate_Sentiment(EMA4Bull)
+f_Calculate_Sentiment(BBBull)
+f_Calculate_Sentiment(SARBull)
+f_Calculate_Sentiment(OBVBull)
+f_Calculate_Sentiment(FTBull)
+f_Calculate_Sentiment(STBull)
+OverallBull = array.get(global, OverallBullIndex)
+OverallBear = array.get(global, OverallBearIndex)
+OverallSentiment = OverallBull >= 12 ? 'Pozitif' : OverallBear >= 12 ? 'Negatif' : OverallBull == OverallBear ? 'Normal' : OverallBull > OverallBear ? 'Pozitif' : OverallBull < OverallBear ? 'Negatif' : 'Normal'
+priceChangeHdrLabel = 'Fiyat Değ.:'
+priceChangeLabel = 'Anlık: ' + StrPercent(priceChangeP) + '%' + f_GetArrow(close, close[1])
+priceChangeCloseLabel = 'Günlük: ' + StrPercent(priceChangeCloseP) + '%' + f_GetArrow(currentPrice, yesterdayClose)
+VolumeHDRLabel = 'Volume:'
+VolumeLabel = StrPrice(currentVol) + f_GetArrow(currentVol, prevVol) + ((currentVol > prevVol) ? '(' + StrPercent(currentVol / prevVol) + 'x)' : '')
+OBVLabel = 'OBV: ' + Str(nz(ta.obv)) + f_GetArrow(ta.obv, ta.obv[1])
+dailyPivotR1Label = 'R1: ' + StrPrice(Dr1Level)
+dailyPivotR2Label = 'R2: ' + StrPrice(Dr2Level)
+dailyPivotR3Label = 'R3: ' + StrPrice(Dr3Level)
+dailyPivotS1Label = 'S1: ' + StrPrice(Ds1Level)
+dailyPivotS2Label = 'S2: ' + StrPrice(Ds2Level)
+dailyPivotS3Label = 'S3: ' + StrPrice(Ds3Level)
+SuperTrendHdrLabel = 'Super Trend:'
+SuperTrendLabel = StrPrice(supertrend) + f_GetArrow(supertrend, supertrend[1])
+SuperTrendStatusLabel = (STBull ? 'Pozitif' : 'Negatif')
+EMAHdrLabel = 'EMA:'
+ema1Label = '(' + str.tostring(EMA1) + '): ' + StrPrice(ema1val) + f_GetArrow(ema1val, ema1val[1])
+ema2Label = '(' + str.tostring(EMA2) + '): ' + StrPrice(ema2val) + f_GetArrow(ema2val, ema2val[1])
+ema3Label = '(' + str.tostring(EMA3) + '): ' + StrPrice(ema3val) + f_GetArrow(ema3val, ema3val[1])
+ema4Label = '(' + str.tostring(EMA4) + '): ' + StrPrice(ema4val) + f_GetArrow(ema4val, ema4val[1])
+stochRSILabel = 'Stoch RSI:'
+stochRSIKLabel = (stochRSIk > stochRSId ? 'Pozitif' : 'Negatif')
+stochRSIDLabel = StrPercent(stochRSIk) + f_GetArrow(stochRSIk, stochRSIk[1])
+macdLabel = 'MACD:'
+macdLvlLabel = (macd > macdSignal ? 'Pozitif' : 'Negatif')
+macdSignalLabel = StrPrice(macd)  + f_GetArrow(macd, macd[1])
+FTLabel = 'Fisher dön.:'
+FTFisherLabel = (FTfisher > FTtrigger ? 'Pozitif' : 'Negatif')
+FTTriggerLabel = StrPrice(FTfisher) + f_GetArrow(FTfisher, FTfisher[1])
+BBLabel = 'Bollinger B :'
+BBUpperLabel = 'Üst B.B: ' + StrPrice(bbUpper) + f_GetArrow(bbUpper, bbUpper[1])
+BBLowerLabel = 'ALT B.B: ' + StrPrice(bbLower) + f_GetArrow(bbLower, bbLower[1])
+RSIHdrLabel = 'RSI:'
+RSILabel = StrPercent(rsi) + f_GetArrow(rsi, rsi[1])
+RSIStatusLabel = f_IndicatorLevel(rsi, 30, 50, 70)
+MFIHdrLabel = 'MFI:'
+MFILabel = StrPercent(mfi) + f_GetArrow(mfi, mfi[1])
+MFIStatusLabel = f_IndicatorLevel(mfi, 20, 50, 80)
+CCIHdrLabel = 'CCI:'
+CCILabel = StrPercent(cci) + f_GetArrow(cci, cci[1])
+CCIStatusLabel = f_IndicatorLevel(cci, -100, 0, 100)
+MOMHdrLabel = 'Momentum:'
+MOMLabel = StrPrice(mom) + f_GetArrow(mom, mom[1])
+MOMStatusLabel = (mom > 0 ? 'Pozitif' : 'Negatif')
+DIHdrLabel = 'Yön indeksi:'
+DILabel = StrPercent(diplus) + f_GetArrow(diplus, diplus[1])
+DIStatusLabel = (diplus > diminus ? 'Pozitif' : 'Negatif')
+ADXLabel = 'ADX Trend: ' + (adx >= 50 ? 'Extremely Strong' : adx >= 30 ? 'Very Strong' : adx > 20 ? 'Strong' : adx > 10 ? 'Weak' : adx > 5 ? 'Very Weak' : 'None')
+PSarHdrLabel = 'Parabolic Sar:'
+PSarLabel = StrPrice(sar) + f_GetArrow(sar, sar[1])
+PSarStatusLabel = (SARBull ? 'Pozitif' : 'Negatif')
+sentimentLabel = 'Eğilim:'
+sentimentBullBearLabel = 'BOĞA: ' + str.tostring(OverallBull) + '  AYI: ' + str.tostring(OverallBear)
+sentimentOverallLabel = OverallSentiment
+closingsLabel = 'G.Kapanış:'
+closingsPrevLabel = 'Önceki G: ' + StrPrice(prevDayClose)
+closingsYestLabel = 'Dün: ' + StrPrice(yesterdayClose)
+cellBullTextColor = #0846f1
+cellBullBgColor = color.lime
+cellBearTextColor = color.white
+cellBearBgColor = color.red
+cellNeutralTextColor = color.black
+cellNeutralBgColor = color.white
+cellTitleBgColor = color.yellow
+cellTitleTextColor = color.black
+cellHeaderBgColor = color.orange
+cellHeaderTextColor = color.white
+
+var table tblMegaPanel = table.new(position.bottom_right, 3, 29, frame_color=color.gray, frame_width=5, border_width=1, border_color=color.black)
+
+f_update_row_header_main(id, row, header) =>
+    table.cell(table_id=id, column=0, row=row, text=header, width=0, height=0, text_color=cellHeaderTextColor, text_size=size.large, bgcolor=cellHeaderBgColor, text_halign=text.align_center)
+    table.cell(table_id=id, column=1, row=row, text='', width=0, height=0, text_color=cellHeaderTextColor, text_size=size.large, bgcolor=cellHeaderBgColor)
+    table.cell(table_id=id, column=2, row=row, text='', width=0, height=0, text_color=cellHeaderTextColor, text_size=size.large, bgcolor=cellHeaderBgColor)
+    table.merge_cells(id, 0, row, 2, row)
+
+f_update_row_header(id, row, header) =>
+    table.cell(table_id=id, column=0, row=row, text=header, width=0, height=0, text_color=cellTitleTextColor, text_size=size.normal, bgcolor=cellTitleBgColor, text_halign=text.align_center)
+    table.cell(table_id=id, column=1, row=row, text='', width=0, height=0, text_color=cellTitleTextColor, text_size=size.normal, bgcolor=cellTitleBgColor)
+    table.cell(table_id=id, column=2, row=row, text='', width=0, height=0, text_color=cellTitleTextColor, text_size=size.normal, bgcolor=cellTitleBgColor)
+    table.merge_cells(id, 0, row, 2, row)
+
+f_update_row_value(id, row, val1, val2, val3, dir1, dir2, dir3) =>
+    textColor1 = dir1 == 1 ? cellBullTextColor : dir1 == -1 ? cellBearTextColor : cellNeutralTextColor
+    bgColor1 = dir1 == 1 ? cellBullBgColor : dir1 == -1 ? cellBearBgColor : cellNeutralBgColor
+    textColor2 = dir2 == 1 ? cellBullTextColor : dir2 == -1 ? cellBearTextColor : cellNeutralTextColor
+    bgColor2 = dir2 == 1 ? cellBullBgColor : dir2 == -1 ? cellBearBgColor : cellNeutralBgColor
+    textColor3 = dir3 == 1 ? cellBullTextColor : dir3 == -1 ? cellBearTextColor : cellNeutralTextColor
+    bgColor3 = dir3 == 1 ? cellBullBgColor : dir3 == -1 ? cellBearBgColor : cellNeutralBgColor
+    table.cell(table_id=id, column=0, row=row, text=val1, width=0, height=0, text_color=textColor1, text_size=size.normal, bgcolor=bgColor1, text_halign=text.align_left)
+    table.cell(table_id=id, column=1, row=row, text=val2, width=0, height=0, text_color=textColor2, text_size=size.normal, bgcolor=bgColor2, text_halign=text.align_center)
+    table.cell(table_id=id, column=2, row=row, text=val3, width=0, height=0, text_color=textColor3, text_size=size.normal, bgcolor=bgColor3, text_halign=text.align_center)
+
+if barstate.islast
+    f_update_row_header_main(tblMegaPanel, 0, 'VERİ PANELİ ')
+    f_update_row_header(tblMegaPanel, 1, 'Güncel Bilgiler')
+    priceChangeDir = f_GetDirection(currentPrice, prevPrice)
+    priceChangeDailyDir = f_GetDirection(close, yesterdayClose)
+    f_update_row_value(tblMegaPanel, 2, priceChangeHdrLabel, priceChangeLabel, priceChangeCloseLabel, 0, priceChangeDir, priceChangeDailyDir)
+    f_update_row_value(tblMegaPanel, 3, VolumeHDRLabel, VolumeLabel, OBVLabel, 0, priceChangeDir, OBVBull ? 1 : -1)
+    //f_update_row_value(tblMegaPanel, 4, LongShortHdrLabel, LongsLabel, ShortsLabel, 0, f_GetDirection(longs, longs[1]), f_GetDirection(shorts[1], shorts))
+    f_update_row_header(tblMegaPanel, 5, 'Indikatörler')
+    f_update_row_value(tblMegaPanel, 6, SuperTrendHdrLabel, SuperTrendStatusLabel, SuperTrendLabel, 0, STBull ? 1 : -1, f_GetDirection(supertrend, supertrend[1]))
+    f_update_row_value(tblMegaPanel, 7, stochRSILabel, stochRSIKLabel, stochRSIDLabel, 0, f_GetDirection(stochRSIk, stochRSId), f_GetDirection(stochRSIk, stochRSIk[1]))
+    f_update_row_value(tblMegaPanel, 8, macdLabel, macdLvlLabel, macdSignalLabel, 0, f_GetDirection(macd, macdSignal), f_GetDirection(macd, macd[1]))
+    f_update_row_value(tblMegaPanel, 9, FTLabel, FTFisherLabel, FTTriggerLabel, 0, f_GetDirection(FTfisher, FTtrigger), f_GetDirection(FTfisher, FTfisher[1]))
+    f_update_row_value(tblMegaPanel, 10, DIHdrLabel, DIStatusLabel, DILabel, 0, f_GetDirection(diplus, diminus), DIBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 11, PSarHdrLabel, PSarStatusLabel, PSarLabel, 0, SARBull ? 1 : -1, SARBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 12, RSIHdrLabel, RSIStatusLabel, RSILabel, 0, rsi >= 50 ? 1 : -1, RSIBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 13, MFIHdrLabel, MFIStatusLabel, MFILabel, 0, mfi >= 50 ? 1 : -1, MFIBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 14, CCIHdrLabel, CCIStatusLabel, CCILabel, 0, cci >= 0 ? 1 : -1, CCIBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 15, MOMHdrLabel, MOMStatusLabel, MOMLabel, 0, mom > 0 ? 1 : -1, MOMBull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 16, EMAHdrLabel, ema1Label, ema2Label, 0, EMA1Bull ? 1 : -1, EMA2Bull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 17, EMAHdrLabel, ema3Label, ema4Label, 0, EMA3Bull ? 1 : -1, EMA4Bull ? 1 : -1)
+    f_update_row_value(tblMegaPanel, 18, BBLabel, BBUpperLabel, BBLowerLabel, 0, f_GetDirection(close, bbMid), f_GetDirection(close, bbMid))
+    sentimentDir = f_GetDirection(OverallBull, OverallBear)
+    f_update_row_value(tblMegaPanel, 19, sentimentLabel, sentimentOverallLabel, sentimentBullBearLabel, 0, sentimentDir, sentimentDir)
+    f_update_row_header(tblMegaPanel, 20, 'Pivot Noktaları')
+    f_update_row_value(tblMegaPanel, 21, dailyPivotR1Label, dailyPivotR2Label, dailyPivotR3Label, f_GetDirection(close, Dr1Level), f_GetDirection(close, Dr2Level), f_GetDirection(close, Dr3Level))
+    f_update_row_value(tblMegaPanel, 22, dailyPivotS1Label, dailyPivotS2Label, dailyPivotS3Label, f_GetDirection(close, Ds1Level), f_GetDirection(close, Ds2Level), f_GetDirection(close, Ds3Level))
+    f_update_row_header(tblMegaPanel, 23, 'Geçmiş Fiyat Bilgisi')
+    closingDailyDir = f_GetDirection(yesterdayClose, prevDayClose)
+    f_update_row_value(tblMegaPanel, 24, closingsLabel, closingsPrevLabel, closingsYestLabel, 0, 0, closingDailyDir)
+
+
+// Alerts
+
+alertSTEnabled = input(true, title='Enable SuperTrend Alerts')
+alertEMAEnabled = input(true, title='Enable EMA Alerts')
+alertStochRSIEnabled = input(true, title='Enable StochRSI Alerts')
+alertMACDEnabled = input(true, title='Enable MACD Alerts')
+alertRSIEnabled = input(true, title='Enable RSI Alerts')
+alertCCIEnabled = input(false, title='Enable CCI Alerts')
+alertMFIEnabled = input(false, title='Enable MFI Alerts')
+alertDMIEnabled = input(false, title='Enable DMI Alerts')
+alertSAREnabled = input(true, title='Enable SAR Alerts')
+alertPivotEnabled = input(false, title='Enable Pivot Alerts')
+
+f_alertCrossRegion(tickerName, indName, indVal1, indVal2, isEnabled, coLimit, cuLimit) =>
+    if isEnabled
+        isCrossOver = ta.crossover(indVal1, indVal2) and (indVal1 <= coLimit or indVal1[1] <= coLimit)
+        isCrossUnder = ta.crossunder(indVal1, indVal2) and (indVal1 >= cuLimit or indVal1[1] >= cuLimit)
+        msg = tickerName + ' ' + timeframe.period + ': '
+        if isCrossOver
+            msg += indName + ' crossover happened' + ' (current: ' + StrPercent(indVal1) + ')'
+            alert(msg, alert.freq_once_per_bar_close)
+        else if isCrossUnder
+            msg += indName + ' crossunder happened' + ' (current: ' + StrPercent(indVal1) + ')'
+            alert(msg, alert.freq_once_per_bar_close)
+
+
+f_alertCross(tickerName, indName, indVal, isEnabled, coVal, cuVal) =>
+    if isEnabled
+        isCrossOver = ta.crossover(indVal, coVal)
+        isCrossUnder = ta.crossunder(indVal, cuVal)
+        msg = tickerName + ' ' + timeframe.period + ': '
+        if isCrossOver
+            msg += indName + ' crossing over ' + StrPercent(coVal) + ' (current: ' + StrPercent(indVal) + ')'
+            alert(msg, alert.freq_once_per_bar_close)
+        else if isCrossUnder
+            msg += indName + ' crossing under ' + StrPercent(cuVal) + '(current: ' + StrPercent(indVal) + ')'
+            alert(msg, alert.freq_once_per_bar_close)
+
+f_alertCross(syminfo.tickerid, 'SuperTrend', close, alertSTEnabled, supertrend, supertrend)
+f_alertCross(syminfo.tickerid, 'EMA' + str.tostring(EMA1) + '/' + str.tostring(EMA2), ema1val, alertEMAEnabled, ema2val, ema2val)
+f_alertCross(syminfo.tickerid, 'EMA' + str.tostring(EMA1) + '/' + str.tostring(EMA3), ema1val, alertEMAEnabled, ema3val, ema3val)
+f_alertCross(syminfo.tickerid, 'EMA' + str.tostring(EMA1) + '/' + str.tostring(EMA4), ema1val, alertEMAEnabled, ema4val, ema4val)
+f_alertCross(syminfo.tickerid, 'EMA' + str.tostring(EMA2) + '/' + str.tostring(EMA3), ema2val, alertEMAEnabled, ema3val, ema3val)
+f_alertCross(syminfo.tickerid, 'EMA' + str.tostring(EMA2) + '/' + str.tostring(EMA4), ema2val, alertEMAEnabled, ema4val, ema4val)
+f_alertCrossRegion(syminfo.tickerid, 'StochRSI', stochRSIk, stochRSId, alertStochRSIEnabled, 20, 80)
+f_alertCross(syminfo.tickerid, 'MACD', macd, alertMACDEnabled, macdSignal, macdSignal)
+f_alertCross(syminfo.tickerid, 'DMI', diplus, alertDMIEnabled, diminus, diminus)
+f_alertCross(syminfo.tickerid, 'Parabolic SAR', sar, alertSAREnabled, close, close)
+f_alertCross(syminfo.tickerid, 'Pivot R1', close, alertPivotEnabled, Dr1Level, Dr1Level)
+f_alertCross(syminfo.tickerid, 'Pivot R2', close, alertPivotEnabled, Dr2Level, Dr2Level)
+f_alertCross(syminfo.tickerid, 'Pivot R3', close, alertPivotEnabled, Dr3Level, Dr3Level)
+f_alertCross(syminfo.tickerid, 'Pivot S1', close, alertPivotEnabled, Ds1Level, Ds1Level)
+f_alertCross(syminfo.tickerid, 'Pivot S2', close, alertPivotEnabled, Ds2Level, Ds2Level)
+f_alertCross(syminfo.tickerid, 'Pivot S3', close, alertPivotEnabled, Ds3Level, Ds3Level)
+f_alertCross(syminfo.tickerid, 'RSI', rsi, alertRSIEnabled, 30, 70)
+f_alertCross(syminfo.tickerid, 'CCI', cci, alertCCIEnabled, -100, 100)
+f_alertCross(syminfo.tickerid, 'CCI', cci, alertCCIEnabled, -200, 200)
+f_alertCross(syminfo.tickerid, 'MFI', mfi, alertMFIEnabled, 20, 80)
+confidence(pearsonR) =>
+    switch
+        pearsonR < 0.2  => "Extremely Weak"
+        pearsonR < 0.3  => "Very Weak"
+        pearsonR < 0.4  => "Weak"
+        pearsonR < 0.5  => "Mostly Weak"
+        pearsonR < 0.6  => "Somewhat Weak"
+        pearsonR < 0.7  => "Moderately Weak"
+        pearsonR < 0.8  => "Moderate"
+        pearsonR < 0.9  => "Moderately Strong"
+        pearsonR < 0.92 => "Mostly Strong"
+        pearsonR < 0.94 => "Strong"
+        pearsonR < 0.96 => "Very Strong"
+        pearsonR < 0.98 => "Exceptionally Strong"
+        =>                        "Ultra Strong"
+
+getTablePosition(string pos) =>
+    switch pos
+        "Bottom Right"  => position.bottom_right
+        "Bottom Center" => position.bottom_center        
+        "Bottom Left"   => position.bottom_left
+        "Top Right"     => position.top_right
+        "Top Left"      => position.top_left
+        "Top Center"    => position.top_center
+        "Middle Right"  => position.middle_right
+        =>                 position.middle_left // "Middle Left" - default
+
+// Calculate deviations for given length
+calcDev(float source, int length) =>
+    float logSource  = math.log(source)
+    var int period_1 = length - 1
+    if barstate.islast
+        float sumX  = 0.0
+        float sumXX = 0.0
+        float sumYX = 0.0
+        float sumY  = 0.0
+        for int i=1 to length
+            float lSrc = logSource[i-1]
+            sumX  += i
+            sumXX += i * i
+            sumYX += i * lSrc
+            sumY  +=     lSrc
+        float slope     = nz((length * sumYX - sumX * sumY) / (length * sumXX - sumX * sumX))
+        float average   = sumY / length
+        float intercept = average - (slope * sumX / length) + slope
+        float sumDev = 0.0
+        float sumDxx = 0.0
+        float sumDyy = 0.0
+        float sumDyx = 0.0
+        float regres = intercept + slope * period_1 * 0.5
+        float sumSlp = intercept
+        for int i=0 to period_1
+            float lSrc = logSource[i]
+            float dxt  =   lSrc - average
+            float dyt  = sumSlp - regres
+            lSrc   -= sumSlp
+            sumSlp += slope
+            sumDxx +=  dxt * dxt
+            sumDyy +=  dyt * dyt
+            sumDyx +=  dxt * dyt
+            sumDev += lSrc * lSrc
+        float unStdDev = math.sqrt(sumDev / period_1) // unbiased
+        float divisor  =    sumDxx * sumDyy
+        float pearsonR = nz(sumDyx / math.sqrt(divisor))
+        [unStdDev, pearsonR, slope, intercept]
+    else
+        [na, na, na, na]
+
+string t1 = "In Long-Term Channel mode, if the channel is not visible, scroll back on the chart for additional historical data. To view both Short-Term and Long-Term channels simultaneously, load this indicator twice on your chart."
+string t2 = "Pearson's R, a statistical measure in Adaptive Trend Finder, gauges the linear relationship between price and trend projection. A value closer to 1 indicates a strong positive correlation, reinforcing confidence in the trend direction based on historical price movements."
+
+sourceInput = input.source(close, title="Source")
+
+string group0 = "CHANNEL SETTINGS"
+bool   periodMode       = input.bool  (         false, "Use Long-Term Channel", group=group0, tooltip=t1)
+float  devMultiplier    = input.float (           2.0, "Deviation Multiplier:", group=group0, step=0.1)
+color  colorInput       = input.color (  color.gray,             "", group=group0, inline=group0)
+string lineStyle1       = input.string(       "Solid",             "", group=group0, inline=group0, options=["Solid", "Dotted", "Dashed"])
+string extendStyle      = input.string("Extend Right",             "", group=group0, inline=group0, options=["Extend Right", "Extend Both", "Extend None", "Extend Left"])
+int    fillTransparency = input.int   (            93, "Fill Transp:", group=group0, inline="mid", minval=0, maxval=100, step=1)
+int channelTransparency = input.int   (            40, "Line Transp:", group=group0, inline="mid", minval=0, maxval=100, step=1)
+
+string group1 = "MIDLINE SETTINGS"
+color  colorInputMidline       = input.color ( color.blue, "", group=group1, inline=group1)
+int    transpInput  = input.int   (     100,          "Transp:", group=group1, inline=group1, minval=0, maxval=100, step=10)
+int    lineWidth    = input.int   (       1,      "Line Width:", group=group1, inline=group1)
+string midLineStyle = input.string(               "Dashed",  "", group=group1, inline=group1, options=["Dotted", "Solid", "Dashed"])
+
+string group2 = "TABLE SETTINGS"
+string tablePositionInput = input.string("Bottom Right", "Table Position", options=["Bottom Right", "Bottom Left", "Middle Right", "Middle Left", "Top Right", "Top Left", "Top Center", "Bottom Center"], group=group2)
+bool   showPearsonInput   = input.bool  (         false, "Show Pearson's R instead of Projection Confidence Level", group=group2, tooltip=t2)
+string textSizeInput      = input.string(      "Normal",      "Text Size", options=["Normal", "Large"], group=group2)
+
+var string EXTEND_STYLE = switch extendStyle
+    "Extend Right" => extend.right
+    "Extend Both"  => extend.both
+    "Extend None"  => extend.none
+    =>                extend.left
+
+// Length Inputs
+var array<int> Periods = periodMode ? array.from(na,300,350,400,450,500,550,600,650,700,750,800,850,900,950,1000,1050,1100,1150,1200) : array.from(na,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200)
+
+// Calculate deviations, correlation, slope, and intercepts for different lengths
+[stdDev01, pearsonR01, slope01, intercept01] = calcDev(sourceInput, Periods.get( 1))
+[stdDev02, pearsonR02, slope02, intercept02] = calcDev(sourceInput, Periods.get( 2))
+[stdDev03, pearsonR03, slope03, intercept03] = calcDev(sourceInput, Periods.get( 3))
+[stdDev04, pearsonR04, slope04, intercept04] = calcDev(sourceInput, Periods.get( 4))
+[stdDev05, pearsonR05, slope05, intercept05] = calcDev(sourceInput, Periods.get( 5))
+[stdDev06, pearsonR06, slope06, intercept06] = calcDev(sourceInput, Periods.get( 6))
+[stdDev07, pearsonR07, slope07, intercept07] = calcDev(sourceInput, Periods.get( 7))
+[stdDev08, pearsonR08, slope08, intercept08] = calcDev(sourceInput, Periods.get( 8))
+[stdDev09, pearsonR09, slope09, intercept09] = calcDev(sourceInput, Periods.get( 9))
+[stdDev10, pearsonR10, slope10, intercept10] = calcDev(sourceInput, Periods.get(10))
+[stdDev11, pearsonR11, slope11, intercept11] = calcDev(sourceInput, Periods.get(11))
+[stdDev12, pearsonR12, slope12, intercept12] = calcDev(sourceInput, Periods.get(12))
+[stdDev13, pearsonR13, slope13, intercept13] = calcDev(sourceInput, Periods.get(13))
+[stdDev14, pearsonR14, slope14, intercept14] = calcDev(sourceInput, Periods.get(14))
+[stdDev15, pearsonR15, slope15, intercept15] = calcDev(sourceInput, Periods.get(15))
+[stdDev16, pearsonR16, slope16, intercept16] = calcDev(sourceInput, Periods.get(16))
+[stdDev17, pearsonR17, slope17, intercept17] = calcDev(sourceInput, Periods.get(17))
+[stdDev18, pearsonR18, slope18, intercept18] = calcDev(sourceInput, Periods.get(18))
+[stdDev19, pearsonR19, slope19, intercept19] = calcDev(sourceInput, Periods.get(19))
+
+if barstate.islast
+    // Find the highest Pearson's R
+    float highestPearsonR = math.max(pearsonR01, pearsonR02, pearsonR03, pearsonR04, pearsonR05, pearsonR06, pearsonR07, pearsonR08, pearsonR09, pearsonR10, pearsonR11, pearsonR12, pearsonR13, pearsonR14, pearsonR15, pearsonR16, pearsonR17, pearsonR18, pearsonR19)
+
+    // Determine selected length, slope, intercept, and deviations
+    int   detectedPeriod  = na
+    float detectedSlope   = na
+    float detectedIntrcpt = na
+    float detectedStdDev  = na
+
+    switch highestPearsonR
+        pearsonR01 =>
+            detectedPeriod  := Periods.get(1)
+            detectedSlope   :=     slope01
+            detectedIntrcpt := intercept01
+            detectedStdDev  :=    stdDev01
+        pearsonR02 =>
+            detectedPeriod  := Periods.get(2)
+            detectedSlope   :=     slope02
+            detectedIntrcpt := intercept02
+            detectedStdDev  :=    stdDev02
+        pearsonR03 =>
+            detectedPeriod  := Periods.get(3)
+            detectedSlope   :=     slope03
+            detectedIntrcpt := intercept03
+            detectedStdDev  :=    stdDev03
+        pearsonR04 =>
+            detectedPeriod  := Periods.get(4)
+            detectedSlope   :=     slope04
+            detectedIntrcpt := intercept04
+            detectedStdDev  :=    stdDev04
+        pearsonR05 =>
+            detectedPeriod  := Periods.get(5)
+            detectedSlope   :=     slope05
+            detectedIntrcpt := intercept05
+            detectedStdDev  :=    stdDev05
+        pearsonR06 =>
+            detectedPeriod  := Periods.get(6)
+            detectedSlope   :=     slope06
+            detectedIntrcpt := intercept06
+            detectedStdDev  :=    stdDev06
+        pearsonR07 =>
+            detectedPeriod  := Periods.get(7)
+            detectedSlope   :=     slope07
+            detectedIntrcpt := intercept07
+            detectedStdDev  :=    stdDev07
+        pearsonR08 =>
+            detectedPeriod  := Periods.get(8)
+            detectedSlope   :=     slope08
+            detectedIntrcpt := intercept08
+            detectedStdDev  :=    stdDev08
+        pearsonR09 =>
+            detectedPeriod  := Periods.get(9)
+            detectedSlope   :=     slope09
+            detectedIntrcpt := intercept09
+            detectedStdDev  :=    stdDev09
+        pearsonR10 => 
+            detectedPeriod  := Periods.get(10)
+            detectedSlope   :=     slope10
+            detectedIntrcpt := intercept10
+            detectedStdDev  :=    stdDev10
+        pearsonR11 =>        
+            detectedPeriod  := Periods.get(11)
+            detectedSlope   :=     slope11
+            detectedIntrcpt := intercept11
+            detectedStdDev  :=    stdDev11
+        pearsonR12 =>
+            detectedPeriod  := Periods.get(12)
+            detectedSlope   :=     slope12
+            detectedIntrcpt := intercept12
+            detectedStdDev  :=    stdDev12
+        pearsonR13 =>
+            detectedPeriod  := Periods.get(13)
+            detectedSlope   :=     slope13
+            detectedIntrcpt := intercept13
+            detectedStdDev  :=    stdDev13
+        pearsonR14 =>
+            detectedPeriod  := Periods.get(14)
+            detectedSlope   :=     slope14
+            detectedIntrcpt := intercept14
+            detectedStdDev  :=    stdDev14
+        pearsonR15 =>
+            detectedPeriod  := Periods.get(15)
+            detectedSlope   :=     slope15
+            detectedIntrcpt := intercept15
+            detectedStdDev  :=    stdDev15
+        pearsonR16 =>
+            detectedPeriod  := Periods.get(16)
+            detectedSlope   :=     slope16
+            detectedIntrcpt := intercept16
+            detectedStdDev  :=    stdDev16
+        pearsonR17 =>
+            detectedPeriod  := Periods.get(17)
+            detectedSlope   :=     slope17
+            detectedIntrcpt := intercept17
+            detectedStdDev  :=    stdDev17
+        pearsonR18 =>
+            detectedPeriod  := Periods.get(18)
+            detectedSlope   :=     slope18
+            detectedIntrcpt := intercept18
+            detectedStdDev  :=    stdDev18
+        => // pearsonR19
+            detectedPeriod  := Periods.get(19)
+            detectedSlope   :=     slope19
+            detectedIntrcpt := intercept19
+            detectedStdDev  :=    stdDev19
+
+    var line upperLine = na,   var linefill upperFill = na
+    var line  baseLine = na
+    var line lowerLine = na,   var linefill lowerFill = na
+
+    // Calculate start and end price based on detected slope and intercept
+    float startPrice = math.exp(detectedIntrcpt + detectedSlope * (detectedPeriod - 1))
+    float   endPrice = math.exp(detectedIntrcpt)
+    
+    int         startAtBar = bar_index - detectedPeriod + 1
+    var color ChannelColor = color.new(colorInput, channelTransparency)
+
+    if na(baseLine)
+        baseLine := line.new(startAtBar, startPrice, bar_index, endPrice,
+                             width=lineWidth, extend=EXTEND_STYLE,
+                             color=color.new(colorInputMidline, transpInput),
+                             style=midLineStyle == "Dotted" ? line.style_dotted :
+                                   midLineStyle == "Dashed" ? line.style_dashed : line.style_solid)
+    else
+        line.set_xy1(baseLine, startAtBar, startPrice)
+        line.set_xy2(baseLine,  bar_index,   endPrice)
+
+    float upperStartPrice = startPrice * math.exp(devMultiplier * detectedStdDev)
+    float upperEndPrice   =   endPrice * math.exp(devMultiplier * detectedStdDev)
+    if na(upperLine)
+        upperLine := line.new(startAtBar, upperStartPrice, bar_index, upperEndPrice,
+                             width=1, extend=EXTEND_STYLE,
+                             color=ChannelColor,
+                             style=lineStyle1 == "Dotted" ? line.style_dotted :
+                                   lineStyle1 == "Dashed" ? line.style_dashed : line.style_solid)
+    else
+        line.set_xy1  (upperLine, startAtBar, upperStartPrice)
+        line.set_xy2  (upperLine,  bar_index,   upperEndPrice)
+        line.set_color(upperLine, colorInput)
+
+    float lowerStartPrice = startPrice / math.exp(devMultiplier * detectedStdDev)
+    float   lowerEndPrice =   endPrice / math.exp(devMultiplier * detectedStdDev)
+    if na(lowerLine)
+        lowerLine := line.new(startAtBar, lowerStartPrice, bar_index, lowerEndPrice,
+                             width=1, extend=EXTEND_STYLE,
+                             color=ChannelColor,
+                             style=lineStyle1 == "Dotted" ? line.style_dotted :
+                                   lineStyle1 == "Dashed" ? line.style_dashed : line.style_solid)
+    else
+        line.set_xy1  (lowerLine, startAtBar, lowerStartPrice)
+        line.set_xy2  (lowerLine,  bar_index,   lowerEndPrice)
+        line.set_color(lowerLine, colorInput)
+
+    if na(upperFill)
+        upperFill := linefill.new(upperLine, baseLine, color=color.new(colorInput, fillTransparency))
+    if na(lowerFill)
+        lowerFill := linefill.new(baseLine, lowerLine, color=color.new(colorInput, fillTransparency))
+// Define variables for detected period, slope, intercept, and deviations
+var int detectedPeriod = na
+var float detectedSlope = na
+var float detectedIntrcpt = na
+var float detectedStdDev = na
+
+// Calculate deviations, correlation, slope, and intercepts for different lengths
+if barstate.islast
+    detectedPeriod  := Periods.get(1)
+    detectedSlope   := slope01
+    detectedIntrcpt := intercept01
+    detectedStdDev  := stdDev01
+
+// Calculate start and end price based on detected slope and intercept
+float startPrice = math.exp(detectedIntrcpt + detectedSlope * (detectedPeriod - 1))
+float lowerEndPrice = startPrice / math.exp(devMultiplier * detectedStdDev)
+//      INDICATOR SETTINGS
+swing_length = input.int(10, title = 'Swing High/Low Length', group = 'Settings', minval = 1, maxval = 50)
+history_of_demand_to_keep = input.int(20, title = 'History To Keep', minval = 5, maxval = 50)
+box_width = input.float(10, title = 'ARZ/TALEP KUTUSU GENISLIGI', group = 'AYARLAR', minval = 1, maxval = 10, step = 0.5)
+
+//      INDICATOR VISUAL SETTINGS
+show_zigzag = input.bool(false, title = 'Show Zig Zag', group = 'Visual Settings', inline = '1')
+show_price_action_labels = input.bool(false, title = 'Show Price Action Labels', group = 'Visual Settings', inline = '2')
+
+supply_color = input.color(color.new(#e70000, 95), title = 'Direnc', group = 'Visual Settings', inline = '3')
+supply_outline_color = input.color(color.new(#ec0101, 1), title = 'Outline', group = 'Visual Settings', inline = '3')
+
+demand_color = input.color(color.new(#22aa00, 89), title = 'Destek', group = 'Visual Settings', inline = '4')
+demand_outline_color = input.color(color.new(#2d00f8, 0), title = 'Outline', group = 'Visual Settings', inline = '4')
+
+bos_label_color = input.color(color.rgb(8, 8, 8), title = 'BOS Label', group = 'Visual Settings', inline = '5')
+
+poi_label_color = input.color(color.rgb(12, 11, 11), title = 'POI Label', group = 'Visual Settings', inline = '7')
+
+swing_type_color = input.color(color.black, title = 'Price Action Label', group = 'Visual Settings', inline = '8')
+zigzag_color = input.color(color.new(#000000,0), title = 'Zig Zag', group = 'Visual Settings', inline = '9')
+//      FUNCTION TO ADD NEW AND REMOVE LAST IN ARRAY
+f_array_add_pop(array, new_value_to_add) =>
+    array.unshift(array, new_value_to_add)
+    array.pop(array)
+
+//      FUNCTION SWING H & L LABELS
+f_sh_sl_labels(array, swing_type) =>
+
+    var string label_text = na
+    if swing_type == 1
+        if array.get(array, 0) >= array.get(array, 1)
+            label_text := 'HH'
+        else
+            label_text := 'LH'
+        label.new(bar_index - swing_length, array.get(array,0), text = label_text, style=label.style_label_down, textcolor = swing_type_color, color = color.new(swing_type_color, 100), size = size.tiny)
+    
+    else if swing_type == -1
+        if array.get(array, 0) >= array.get(array, 1)
+            label_text := 'HL'
+        else
+            label_text := 'LL'
+        label.new(bar_index - swing_length, array.get(array,0), text = label_text, style=label.style_label_up, textcolor = swing_type_color, color = color.new(swing_type_color, 100), size = size.tiny)
+
+//      FUNCTION MAKE SURE SUPPLY ISNT OVERLAPPING
+f_check_overlapping(new_poi, box_array, atr) =>
+
+    atr_threshold = atr * 2
+    okay_to_draw = true
+
+    for i = 0 to array.size(box_array) - 1
+        top = box.get_top(array.get(box_array, i))
+        bottom = box.get_bottom(array.get(box_array, i))
+        poi = (top + bottom) / 2
+
+        upper_boundary = poi + atr_threshold
+        lower_boundary = poi - atr_threshold
+
+        if new_poi >= lower_boundary and new_poi <= upper_boundary
+            okay_to_draw := false
+            break
+        else 
+            okay_to_draw := true
+    okay_to_draw
+
+//
+var tb = table.new(position.bottom_left, 1, 1,
+   bgcolor = #0f22f2), force_overlay=true
+
+//      FUNCTION TO DRAW SUPPLY OR DEMAND ZONE
+f_supply_demand(value_array, bn_array, box_array, label_array, box_type, atr) =>
+
+    atr_buffer = atr * (box_width / 10)
+    box_left = array.get(bn_array, 0)
+    box_right = bar_index
+
+    var float box_top = 0.00
+    var float box_bottom = 0.00
+    var float poi = 0.00
+
+    if box_type == 1
+        box_top := array.get(value_array, 0)
+        box_bottom := box_top - atr_buffer
+        poi := (box_top + box_bottom) / 2
+    else if box_type == -1
+        box_bottom := array.get(value_array, 0)
+        box_top := box_bottom + atr_buffer
+        poi := (box_top + box_bottom) / 2
+
+    okay_to_draw = f_check_overlapping(poi, box_array, atr)
+    // okay_to_draw = true
+
+    //delete oldest box, and then create a new box and add it to the array
+    if box_type == 1 and okay_to_draw
+        box.delete( array.get(box_array, array.size(box_array) - 1) )
+        f_array_add_pop(box_array, box.new( left = box_left, top = box_top, right = box_right, bottom = box_bottom, border_color = supply_outline_color,
+             bgcolor = supply_color, extend = extend.right, text = 'Direnc', text_halign = text.align_center, text_valign = text.align_center, text_color = poi_label_color, text_size = size.small, xloc = xloc.bar_index))
+        
+        box.delete( array.get(label_array, array.size(label_array) - 1) )
+        f_array_add_pop(label_array, box.new( left = box_left, top = poi, right = box_right, bottom = poi, border_color = color.new(poi_label_color,90),
+             bgcolor = color.new(poi_label_color,90), extend = extend.right, text = 'POI', text_halign = text.align_left, text_valign = text.align_center, text_color = poi_label_color, text_size = size.small, xloc = xloc.bar_index))
+
+    else if box_type == -1 and okay_to_draw
+        box.delete( array.get(box_array, array.size(box_array) - 1) )
+        f_array_add_pop(box_array, box.new( left = box_left, top = box_top, right = box_right, bottom = box_bottom, border_color = demand_outline_color,
+             bgcolor = demand_color, extend = extend.right,  text = 'Destek', text_halign = text.align_center, text_valign = text.align_center, text_color = poi_label_color, text_size = size.small, xloc = xloc.bar_index))
+        
+        box.delete( array.get(label_array, array.size(label_array) - 1) )
+        f_array_add_pop(label_array, box.new( left = box_left, top = poi, right = box_right, bottom = poi, border_color = color.new(poi_label_color,90),
+             bgcolor = color.new(poi_label_color,90), extend = extend.right,  text = 'POI', text_halign = text.align_left, text_valign = text.align_center, text_color = poi_label_color, text_size = size.small, xloc = xloc.bar_index))
+
+
+//      FUNCTION TO CHANGE SUPPLY/DEMAND TO A BOS IF BROKEN
+f_sd_to_bos(box_array, bos_array, label_array, zone_type) =>
+        
+    if zone_type == 1
+        for i = 0 to array.size(box_array) - 1
+            level_to_break = box.get_top(array.get(box_array,i))
+            // if ta.crossover(close, level_to_break)
+            if close >= level_to_break
+                copied_box = box.copy(array.get(box_array,i))
+                f_array_add_pop(bos_array, copied_box)
+                mid = (box.get_top(array.get(box_array,i)) + box.get_bottom(array.get(box_array,i))) / 2
+                box.set_top(array.get(bos_array,0), mid)
+                box.set_bottom(array.get(bos_array,0), mid)
+                box.set_extend( array.get(bos_array,0), extend.none)
+                box.set_right( array.get(bos_array,0), bar_index)
+                box.set_text( array.get(bos_array,0), 'BOS' )
+                box.set_text_color( array.get(bos_array,0), bos_label_color)
+                box.set_text_size( array.get(bos_array,0), size.small)
+                box.set_text_halign( array.get(bos_array,0), text.align_center)
+                box.set_text_valign( array.get(bos_array,0), text.align_center)
+                box.delete(array.get(box_array, i))
+                box.delete(array.get(label_array, i))
+
+
+    if zone_type == -1
+        for i = 0 to array.size(box_array) - 1
+            level_to_break = box.get_bottom(array.get(box_array,i))
+            // if ta.crossunder(close, level_to_break)
+            if close <= level_to_break
+                copied_box = box.copy(array.get(box_array,i))
+                f_array_add_pop(bos_array, copied_box)
+                mid = (box.get_top(array.get(box_array,i)) + box.get_bottom(array.get(box_array,i))) / 2
+                box.set_top(array.get(bos_array,0), mid)
+                box.set_bottom(array.get(bos_array,0), mid)
+                box.set_extend( array.get(bos_array,0), extend.none)
+                box.set_right( array.get(bos_array,0), bar_index)
+                box.set_text( array.get(bos_array,0), 'BOS' )
+                box.set_text_color( array.get(bos_array,0), bos_label_color)
+                box.set_text_size( array.get(bos_array,0), size.small)
+                box.set_text_halign( array.get(bos_array,0), text.align_center)
+                box.set_text_valign( array.get(bos_array,0), text.align_center)
+                box.delete(array.get(box_array, i))
+                box.delete(array.get(label_array, i))
+
+
+//      FUNCTION MANAGE CURRENT BOXES BY CHANGING ENDPOINT
+f_extend_box_endpoint(box_array) =>
+
+    for i = 0 to array.size(box_array) - 1
+        box.set_right(array.get(box_array, i), bar_index + 100)
+
+//CALCULATIONS
+//
+//      CALCULATE ATR 
+atr55 = ta.atr(50)
+
+//      CALCULATE SWING HIGHS & SWING LOWS
+swing_high = ta.pivothigh(high, swing_length, swing_length)
+swing_low = ta.pivotlow(low, swing_length, swing_length)
+
+//      ARRAYS FOR SWING H/L & BN 
+var swing_high_values = array.new_float(5,0.00)
+var swing_low_values = array.new_float(5,0.00)
+
+var swing_high_bns = array.new_int(5,0)
+var swing_low_bns = array.new_int(5,0)
+
+//      ARRAYS FOR SUPPLY / DEMAND
+var current_supply_box = array.new_box(history_of_demand_to_keep, na)
+var current_demand_box = array.new_box(history_of_demand_to_keep, na)
+
+//      ARRAYS FOR SUPPLY / DEMAND POI LABELS
+var current_supply_poi = array.new_box(history_of_demand_to_keep, na)
+var current_demand_poi = array.new_box(history_of_demand_to_keep, na)
+
+if barstate.isfirst 
+    table.cell(tb, 0, 0, 'combo code', text_size = size.small, text_color = #ffffff)
+//      ARRAYS FOR BOS
+var supply_bos = array.new_box(5, na)
+var demand_bos = array.new_box(5, na)
+//
+//END CALCULATIONS
+//
+//      NEW SWING HIGH
+if not na(swing_high)
+
+    //MANAGE SWING HIGH VALUES
+    f_array_add_pop(swing_high_values, swing_high)
+    f_array_add_pop(swing_high_bns, bar_index[swing_length])
+    if show_price_action_labels
+        f_sh_sl_labels(swing_high_values, 1)
+
+    f_supply_demand(swing_high_values, swing_high_bns, current_supply_box, current_supply_poi, 1, atr55)
+
+//      NEW SWING LOW
+else if not na(swing_low)
+
+    //MANAGE SWING LOW VALUES
+    f_array_add_pop(swing_low_values, swing_low)
+    f_array_add_pop(swing_low_bns, bar_index[swing_length])
+    if show_price_action_labels
+        f_sh_sl_labels(swing_low_values, -1)
+    
+    f_supply_demand(swing_low_values, swing_low_bns, current_demand_box, current_demand_poi, -1, atr55)
+
+
+f_sd_to_bos(current_supply_box, supply_bos, current_supply_poi, 1)
+f_sd_to_bos(current_demand_box, demand_bos, current_demand_poi, -1)
+
+f_extend_box_endpoint(current_supply_box)
+f_extend_box_endpoint(current_demand_box)
+
+func() =>
+    // Koşulları kontrol et
+    
+    // Sentiment koşulunu kontrol et
+    cond = (OverallSentiment == 'Pozitif')// or OverallSentiment == 'Normal') // Sentiment pozitif veya normal
+    
+    // Sonucu döndür
+    [close, cond]
+//////////////////////////
+//GRUP VE TARANACAK HİSSE SAYISINI AYNI ŞEKİLDE DİLEDİĞİNİZ GİBİ ARTIRABİLİRSİNİZ.
+sb1 =  input.symbol(title='1',  defval='',group = "╠═════════════ ÖZEL LİSTE ═════════════╣")
+sb2 =  input.symbol(title='2',  defval='BIST:XAKUR')
+sb3 =  input.symbol(title='3',  defval='BIST:XBANA')
+sb4 =  input.symbol(title='4',  defval='BIST:XBANK')
+sb5 =  input.symbol(title='5',  defval='BIST:XBLSM')
+sb6 =  input.symbol(title='6',  defval='BIST:XELKT')
+sb7 =  input.symbol(title='7',  defval='BIST:XFINK')
+sb8 =  input.symbol(title='8',  defval='BIST:XGIDA')
+sb9 =  input.symbol(title='9',  defval='BIST:XGMYO')
+sb10 = input.symbol(title='10', defval='BIST:XHOLD')
+sb11 = input.symbol(title='11', defval='BIST:XILTM')
+sb12 = input.symbol(title='12', defval='BIST:XINSA')
+sb13 = input.symbol(title='13', defval='BIST:XKAGT')
+sb14 = input.symbol(title='14', defval='BIST:XKMYA')
+sb15 = input.symbol(title='15', defval='BIST:XMADN')
+sb16 = input.symbol(title='16', defval='BIST:XMANA')
+sb17 = input.symbol(title='17', defval='BIST:XMESY')
+sb18 = input.symbol(title='18', defval='BIST:XSGRT')
+sb19 = input.symbol(title='19', defval='BIST:XSPOR')
+sb20 = input.symbol(title='20', defval='BIST:XTAST')
+sb21 = input.symbol(title='21', defval='BIST:XTCRT')
+sb22 = input.symbol(title='22', defval='BIST:XTEKS')
+sb23 = input.symbol(title='23', defval='BIST:XTRZM')
+sb24 = input.symbol(title='24', defval='BIST:XTUMY')
+sb25 = input.symbol(title='25', defval='BIST:XU030')
+sb26 = input.symbol(title='26', defval='BIST:XU100')
+sb27 = input.symbol(title='27', defval='BIST:XU500')
+sb28 = input.symbol(title='28', defval='BIST:XULAS')
+sb29 = input.symbol(title='29', defval='BIST:XUSIN')
+sb30 = input.symbol(title='30', defval='BIST:XUTEK')
+sb31 = input.symbol(title='31', defval='BIST:XUTUM')
+sb32 = input.symbol(title='32', defval='')
+sb33 = input.symbol(title='33', defval='')
+sb34 = input.symbol(title='34', defval='')
+sb35 = input.symbol(title='35', defval='')
+//sb36 = input.symbol(title='36', defval='')
+//sb37 = input.symbol(title='37', defval='')
+//sb38 = input.symbol(title='38', defval='')
+//sb39 = input.symbol(title='39', defval='')
+//sb40 = input.symbol(title='40', defval='')
+
+a01 = grupSec == '1' ? 'BIST:A1CAP' : grupSec == '2' ? 'BIST:ARCLK' : grupSec == '3' ? 'BIST:BIGCH' : grupSec == '4' ? 'BIST:CEMTS' : grupSec == '5' ? 'BIST:DZGYO' : grupSec == '6' ? 'BIST:FLAP' : grupSec == '7' ? 'BIST:HEKTS' : grupSec == '8' ? 'BIST:IZMDC' : grupSec == '9' ? 'BIST:KRSTL' : grupSec == '10' ? 'BIST:MHRGY' : grupSec == '11' ? 'BIST:OZRDN' : grupSec == '12' ? 'BIST:RYGYO' : grupSec == '13' ? 'BIST:TABGD' : grupSec == '14' ? 'BIST:ULUUN' : grupSec == 'ÖZEL LİSTE' ? sb1 : na
+a02 = grupSec == '1' ? 'BIST:ACSEL' : grupSec == '2' ? 'BIST:ARDYZ' : grupSec == '3' ? 'BIST:BIMAS' : grupSec == '4' ? 'BIST:CEOEM' : grupSec == '5' ? 'BIST:EBEBK' : grupSec == '6' ? 'BIST:FMIZP' : grupSec == '7' ? 'BIST:HKTM' : grupSec == '8' ? 'BIST:JANTS' : grupSec == '9' ? 'BIST:KRTEK' : grupSec == '10' ? 'BIST:MIATK' : grupSec == '11' ? 'BIST:OZSUB' : grupSec == '12' ? 'BIST:RYSAS' : grupSec == '13' ? 'BIST:TARKM' : grupSec == '14' ? 'BIST:UMPAS' : grupSec == 'ÖZEL LİSTE' ? sb2 : na
+a03 = grupSec == '1' ? 'BIST:ADEL' : grupSec == '2' ? 'BIST:ARENA' : grupSec == '3' ? 'BIST:BINHO' : grupSec == '4' ? 'BIST:CIMSA' : grupSec == '5' ? 'BIST:ECILC' : grupSec == '6' ? 'BIST:FONET' : grupSec == '7' ? 'BIST:HLGYO' : grupSec == '8' ? 'BIST:KAPLM' : grupSec == '9' ? 'BIST:KRVGD' : grupSec == '10' ? 'BIST:LYDHO' : grupSec == '11' ? 'BIST:PAGYO' : grupSec == '12' ? 'BIST:SAFKR' : grupSec == '13' ? 'BIST:TATEN' : grupSec == '14' ? 'BIST:UNLU' : grupSec == 'ÖZEL LİSTE' ? sb3 : na
+a04 = grupSec == '1' ? 'BIST:ADESE' : grupSec == '2' ? 'BIST:ARSAN' : grupSec == '3' ? 'BIST:BIOEN' : grupSec == '4' ? 'BIST:CLEBI' : grupSec == '5' ? 'BIST:ECZYT' : grupSec == '6' ? 'BIST:FORMT' : grupSec == '7' ? 'BIST:HTTBT' : grupSec == '8' ? 'BIST:KAREL' : grupSec == '9' ? 'BIST:KSTUR' : grupSec == '10' ? 'BIST:MMCAS' : grupSec == '11' ? 'BIST:PAMEL' : grupSec == '12' ? 'BIST:SAHOL' : grupSec == '13' ? 'BIST:TATGD' : grupSec == '14' ? 'BIST:USAK' : grupSec == 'ÖZEL LİSTE' ? sb4 : na
+a05 = grupSec == '1' ? 'BIST:ADGYO' : grupSec == '2' ? 'BIST:ARTMS' : grupSec == '3' ? 'BIST:BIZIM' : grupSec == '4' ? 'BIST:CMBTN' : grupSec == '5' ? 'BIST:EDATA' : grupSec == '6' ? 'BIST:FORTE' : grupSec == '7' ? 'BIST:HUBVC' : grupSec == '8' ? 'BIST:KARSN' : grupSec == '9' ? 'BIST:KTLEV' : grupSec == '10' ? 'BIST:MNDRS' : grupSec == '11' ? 'BIST:PAPIL' : grupSec == '12' ? 'BIST:SAMAT' : grupSec == '13' ? 'BIST:TAVHL' : grupSec == '14' ? 'BIST:INTEK' : grupSec == 'ÖZEL LİSTE' ? sb5 : na
+a06 = grupSec == '1' ? 'BIST:AEFES' : grupSec == '2' ? 'BIST:ARZUM' : grupSec == '3' ? 'BIST:BIGCH' : grupSec == '4' ? 'BIST:CMENT' : grupSec == '5' ? 'BIST:EDIP' : grupSec == '6' ? 'BIST:FRIGO' : grupSec == '7' ? 'BIST:HUNER' : grupSec == '8' ? 'BIST:KARTN' : grupSec == '9' ? 'BIST:KTSKR' : grupSec == '10' ? 'BIST:MNDTR' : grupSec == '11' ? 'BIST:PARSN' : grupSec == '12' ? 'BIST:SANEL' : grupSec == '13' ? 'BIST:TBORG' : grupSec == '14' ? 'BIST:VAKBN' : grupSec == 'ÖZEL LİSTE' ? sb6 : na
+a07 = grupSec == '1' ? 'BIST:AFYON' : grupSec == '2' ? 'BIST:ASELS' : grupSec == '3' ? 'BIST:BIMAS' : grupSec == '4' ? 'BIST:CONSE' : grupSec == '5' ? 'BIST:EGEEN' : grupSec == '6' ? 'BIST:FROTO' : grupSec == '7' ? 'BIST:HURGZ' : grupSec == '8' ? 'BIST:KARYE' : grupSec == '9' ? 'BIST:KUTPO' : grupSec == '10' ? 'BIST:MOBTL' : grupSec == '11' ? 'BIST:PASEU' : grupSec == '12' ? 'BIST:SANFM' : grupSec == '13' ? 'BIST:TCELL' : grupSec == '14' ? 'BIST:VAKFN' : grupSec == 'ÖZEL LİSTE' ? sb7 : na
+a08 = grupSec == '1' ? 'BIST:AGESA' : grupSec == '2' ? 'BIST:ASGYO' : grupSec == '3' ? 'BIST:BINHO' : grupSec == '4' ? 'BIST:COSMO' : grupSec == '5' ? 'BIST:EGEPO' : grupSec == '6' ? 'BIST:FZLGY' : grupSec == '7' ? 'BIST:ICBCT' : grupSec == '8' ? 'BIST:KATMR' : grupSec == '9' ? 'BIST:KUVVA' : grupSec == '10' ? 'BIST:MOGAN' : grupSec == '11' ? 'BIST:PATEK' : grupSec == '12' ? 'BIST:SANKO' : grupSec == '13' ? 'BIST:TDGYO' : grupSec == '14' ? 'BIST:VAKKO' : grupSec == 'ÖZEL LİSTE' ? sb8 : na
+a09 = grupSec == '1' ? 'BIST:AGHOL' : grupSec == '2' ? 'BIST:ASTOR' : grupSec == '3' ? 'BIST:BIOEN' : grupSec == '4' ? 'BIST:CRDFA' : grupSec == '5' ? 'BIST:EGGUB' : grupSec == '6' ? 'BIST:GARAN' : grupSec == '7' ? 'BIST:ICUGS' : grupSec == '8' ? 'BIST:KAYSE' : grupSec == '9' ? 'BIST:KUYAS' : grupSec == '10' ? 'BIST:MPARK' : grupSec == '11' ? 'BIST:PCILT' : grupSec == '12' ? 'BIST:SARKY' : grupSec == '13' ? 'BIST:TEKTU' : grupSec == '14' ? 'BIST:VANGD' : grupSec == 'ÖZEL LİSTE' ? sb9 : na
+a10 = grupSec == '1' ? 'BIST:AGROT' : grupSec == '2' ? 'BIST:ASUZU' : grupSec == '3' ? 'BIST:BIZIM' : grupSec == '4' ? 'BIST:CRFSA' : grupSec == '5' ? 'BIST:EGPRO' : grupSec == '6' ? 'BIST:GARFA' : grupSec == '7' ? 'BIST:IDGYO' : grupSec == '8' ? 'BIST:KBORU' : grupSec == '9' ? 'BIST:KZBGY' : grupSec == '10' ? 'BIST:MRGYO' : grupSec == '11' ? 'BIST:PEHOL' : grupSec == '12' ? 'BIST:SASA' : grupSec == '13' ? 'BIST:TERA' : grupSec == '14' ? 'BIST:VBTYZ' : grupSec == 'ÖZEL LİSTE' ? sb10 : na
+a11 = grupSec == '1' ? 'BIST:AGYO' : grupSec == '2' ? 'BIST:ATAGY' : grupSec == '3' ? 'BIST:BJKAS' : grupSec == '4' ? 'BIST:CUSAN' : grupSec == '5' ? 'BIST:EGSER' : grupSec == '6' ? 'BIST:GEDIK' : grupSec == '7' ? 'BIST:IEYHO' : grupSec == '8' ? 'BIST:KCAER' : grupSec == '9' ? 'BIST:KZGYO' : grupSec == '10' ? 'BIST:MRSHL' : grupSec == '11' ? 'BIST:PEKGY' : grupSec == '12' ? 'BIST:SAYAS' : grupSec == '13' ? 'BIST:TETMT' : grupSec == '14' ? 'BIST:VERTU' : grupSec == 'ÖZEL LİSTE' ? sb11 : na
+a12 = grupSec == '1' ? 'BIST:AHGAZ' : grupSec == '2' ? 'BIST:ATAKP' : grupSec == '3' ? 'BIST:BLCYT' : grupSec == '4' ? 'BIST:CVKMD' : grupSec == '5' ? 'BIST:EKGYO' : grupSec == '6' ? 'BIST:GEDZA' : grupSec == '7' ? 'BIST:IHAAS' : grupSec == '8' ? 'BIST:KCHOL' : grupSec == '9' ? 'BIST:LIDER' : grupSec == '10' ? 'BIST:MSGYO' : grupSec == '11' ? 'BIST:PENGD' : grupSec == '12' ? 'BIST:SDTTR' : grupSec == '13' ? 'BIST:TEZOL' : grupSec == '14' ? 'BIST:VERUS' : grupSec == 'ÖZEL LİSTE' ? sb12 : na
+a13 = grupSec == '1' ? 'BIST:AKBNK' : grupSec == '2' ? 'BIST:ATATP' : grupSec == '3' ? 'BIST:BMSCH' : grupSec == '4' ? 'BIST:CWENE' : grupSec == '5' ? 'BIST:EKIZ' : grupSec == '6' ? 'BIST:GENIL' : grupSec == '7' ? 'BIST:IHEVA' : grupSec == '8' ? 'BIST:KENT' : grupSec == '9' ? 'BIST:LIDFA' : grupSec == '10' ? 'BIST:MTRKS' : grupSec == '11' ? 'BIST:PENTA' : grupSec == '12' ? 'BIST:SEGYO' : grupSec == '13' ? 'BIST:TGSAS' : grupSec == '14' ? 'BIST:VESBE' : grupSec == 'ÖZEL LİSTE' ? sb13 : na
+a14 = grupSec == '1' ? 'BIST:AKCNS' : grupSec == '2' ? 'BIST:ATEKS' : grupSec == '3' ? 'BIST:BMSTL' : grupSec == '4' ? 'BIST:DAGHL' : grupSec == '5' ? 'BIST:EKOS' : grupSec == '6' ? 'BIST:GENTS' : grupSec == '7' ? 'BIST:IHGZT' : grupSec == '8' ? 'BIST:KERVN' : grupSec == '9' ? 'BIST:LINK' : grupSec == '10' ? 'BIST:MTRYO' : grupSec == '11' ? 'BIST:PETKM' : grupSec == '12' ? 'BIST:SEKFK' : grupSec == '13' ? 'BIST:THYAO' : grupSec == '14' ? 'BIST:VESTL' : grupSec == 'ÖZEL LİSTE' ? sb14 : na
+a15 = grupSec == '1' ? 'BIST:AKENR' : grupSec == '2' ? 'BIST:ATLAS' : grupSec == '3' ? 'BIST:BNTAS' : grupSec == '4' ? 'BIST:DAGI' : grupSec == '5' ? 'BIST:EKSUN' : grupSec == '6' ? 'BIST:GEREL' : grupSec == '7' ? 'BIST:IHLAS' : grupSec == '8' ? 'BIST:KERVT' : grupSec == '9' ? 'BIST:LKMNH' : grupSec == '10' ? 'BIST:MZHLD' : grupSec == '11' ? 'BIST:PETUN' : grupSec == '12' ? 'BIST:SEKUR' : grupSec == '13' ? 'BIST:TKFEN' : grupSec == '14' ? 'BIST:VKFYO' : grupSec == 'ÖZEL LİSTE' ? sb15 : na
+a16 = grupSec == '1' ? 'BIST:AKFGY' : grupSec == '2' ? 'BIST:ATSYH' : grupSec == '3' ? 'BIST:BOBET' : grupSec == '4' ? 'BIST:DAPGM' : grupSec == '5' ? 'BIST:ELITE' : grupSec == '6' ? 'BIST:GESAN' : grupSec == '7' ? 'BIST:IHLGM' : grupSec == '8' ? 'BIST:KFEIN' : grupSec == '9' ? 'BIST:LMKDC' : grupSec == '10' ? 'BIST:NATEN' : grupSec == '11' ? 'BIST:PGSUS' : grupSec == '12' ? 'BIST:SELEC' : grupSec == '13' ? 'BIST:TKNSA' : grupSec == '14' ? 'BIST:VKGYO' : grupSec == 'ÖZEL LİSTE' ? sb16 : na
+a17 = grupSec == '1' ? 'BIST:AKFYE' : grupSec == '2' ? 'BIST:AVGYO' : grupSec == '3' ? 'BIST:BORLS' : grupSec == '4' ? 'BIST:DARDL' : grupSec == '5' ? 'BIST:EMKEL' : grupSec == '6' ? 'BIST:GIPTA' : grupSec == '7' ? 'BIST:IHYAY' : grupSec == '8' ? 'BIST:KGYO' : grupSec == '9' ? 'BIST:LOGO' : grupSec == '10' ? 'BIST:NETAS' : grupSec == '11' ? 'BIST:PINSU' : grupSec == '12' ? 'BIST:SELGD' : grupSec == '13' ? 'BIST:TLMAN' : grupSec == '14' ? 'BIST:VKING' : grupSec == 'ÖZEL LİSTE' ? sb17 : na
+a18 = grupSec == '1' ? 'BIST:AKGRT' : grupSec == '2' ? 'BIST:AVHOL' : grupSec == '3' ? 'BIST:BORSK' : grupSec == '4' ? 'BIST:DENGE' : grupSec == '5' ? 'BIST:EMNIS' : grupSec == '6' ? 'BIST:GLBMD' : grupSec == '7' ? 'BIST:IMASM' : grupSec == '8' ? 'BIST:KIMMR' : grupSec == '9' ? 'BIST:LRSHO' : grupSec == '10' ? 'BIST:NIBAS' : grupSec == '11' ? 'BIST:PKART' : grupSec == '12' ? 'BIST:SELVA' : grupSec == '13' ? 'BIST:TMPOL' : grupSec == '14' ? 'BIST:VRGYO' : grupSec == 'ÖZEL LİSTE' ? sb18 : na
+a19 = grupSec == '1' ? 'BIST:AKMGY' : grupSec == '2' ? 'BIST:AVOD' : grupSec == '3' ? 'BIST:BOSSA' : grupSec == '4' ? 'BIST:DERHL' : grupSec == '5' ? 'BIST:ENERY' : grupSec == '6' ? 'BIST:GLCVY' : grupSec == '7' ? 'BIST:INDES' : grupSec == '8' ? 'BIST:KLGYO' : grupSec == '9' ? 'BIST:LUKSK' : grupSec == '10' ? 'BIST:NTGAZ' : grupSec == '11' ? 'BIST:PKENT' : grupSec == '12' ? 'BIST:SEYKM' : grupSec == '13' ? 'BIST:TMSN' : grupSec == '14' ? 'BIST:YAPRK' : grupSec == 'ÖZEL LİSTE' ? sb19 : na
+a20 = grupSec == '1' ? 'BIST:AKSA' : grupSec == '2' ? 'BIST:AVPGY' : grupSec == '3' ? 'BIST:BRISA' : grupSec == '4' ? 'BIST:DERIM' : grupSec == '5' ? 'BIST:ENJSA' : grupSec == '6' ? 'BIST:GLRYH' : grupSec == '7' ? 'BIST:INFO' : grupSec == '8' ? 'BIST:KLKIM' : grupSec == '9' ? 'BIST:MAALT' : grupSec == '10' ? 'BIST:NTHOL' : grupSec == '11' ? 'BIST:PLTUR' : grupSec == '12' ? 'BIST:SILVR' : grupSec == '13' ? 'BIST:TNZTP' : grupSec == '14' ? 'BIST:YATAS' : grupSec == 'ÖZEL LİSTE' ? sb20 : na
+a21 = grupSec == '1' ? 'BIST:AKSEN' : grupSec == '2' ? 'BIST:AVTUR' : grupSec == '3' ? 'BIST:BRKO' : grupSec == '4' ? 'BIST:DESA' : grupSec == '5' ? 'BIST:ENKAI' : grupSec == '6' ? 'BIST:GLYHO' : grupSec == '7' ? 'BIST:INGRM' : grupSec == '8' ? 'BIST:KLMSN' : grupSec == '9' ? 'BIST:MACKO' : grupSec == '10' ? 'BIST:NUGYO' : grupSec == '11' ? 'BIST:PNLSN' : grupSec == '12' ? 'BIST:SISE' : grupSec == '13' ? 'BIST:TOASO' : grupSec == '14' ? 'BIST:YAYLA' : grupSec == 'ÖZEL LİSTE' ? sb21 : na
+a22 = grupSec == '1' ? 'BIST:AKSGY' : grupSec == '2' ? 'BIST:AYCES' : grupSec == '3' ? 'BIST:BRKSN' : grupSec == '4' ? 'BIST:DESPC' : grupSec == '5' ? 'BIST:ENSRI' : grupSec == '6' ? 'BIST:GMTAS' : grupSec == '7' ? 'BIST:INTEM' : grupSec == '8' ? 'BIST:KLNMA' : grupSec == '9' ? 'BIST:MAGEN' : grupSec == '10' ? 'BIST:NUHCM' : grupSec == '11' ? 'BIST:PNSUT' : grupSec == '12' ? 'BIST:SKBNK' : grupSec == '13' ? 'BIST:TRCAS' : grupSec == '14' ? 'BIST:YBTAS' : grupSec == 'ÖZEL LİSTE' ? sb22 : na
+a23 = grupSec == '1' ? 'BIST:AKSUE' : grupSec == '2' ? 'BIST:AYDEM' : grupSec == '3' ? 'BIST:BRKVY' : grupSec == '4' ? 'BIST:DEVA' : grupSec == '5' ? 'BIST:EPLAS' : grupSec == '6' ? 'BIST:GOKNR' : grupSec == '7' ? 'BIST:INVEO' : grupSec == '8' ? 'BIST:KLRHO' : grupSec == '9' ? 'BIST:MAKIM' : grupSec == '10' ? 'BIST:OBAMS' : grupSec == '11' ? 'BIST:POLHO' : grupSec == '12' ? 'BIST:SKTAS' : grupSec == '13' ? 'BIST:TRGYO' : grupSec == '14' ? 'BIST:YEOTK' : grupSec == 'ÖZEL LİSTE' ? sb23 : na
+a24 = grupSec == '1' ? 'BIST:AKYHO' : grupSec == '2' ? 'BIST:AYEN' : grupSec == '3' ? 'BIST:BRLSM' : grupSec == '4' ? 'BIST:DGATE' : grupSec == '5' ? 'BIST:ERBOS' : grupSec == '6' ? 'BIST:GOLTS' : grupSec == '7' ? 'BIST:INVES' : grupSec == '8' ? 'BIST:KLSER' : grupSec == '9' ? 'BIST:MAKTK' : grupSec == '10' ? 'BIST:OBASE' : grupSec == '11' ? 'BIST:POLTK' : grupSec == '12' ? 'BIST:SKYLP' : grupSec == '13' ? 'BIST:TRILC' : grupSec == '14' ? 'BIST:YESIL' : grupSec == 'ÖZEL LİSTE' ? sb24 : na
+a25 = grupSec == '1' ? 'BIST:ALARK' : grupSec == '2' ? 'BIST:AYES' : grupSec == '3' ? 'BIST:BRMEN' : grupSec == '4' ? 'BIST:DGGYO' : grupSec == '5' ? 'BIST:ERCB' : grupSec == '6' ? 'BIST:GOODY' : grupSec == '7' ? 'BIST:IPEKE' : grupSec == '8' ? 'BIST:KLSYN' : grupSec == '9' ? 'BIST:MANAS' : grupSec == '10' ? 'BIST:ODAS' : grupSec == '11' ? 'BIST:PRDGS' : grupSec == '12' ? 'BIST:SKYMD' : grupSec == '13' ? 'BIST:TSGYO' : grupSec == '14' ? 'BIST:YGGYO' : grupSec == 'ÖZEL LİSTE' ? sb25 : na
+a26 = grupSec == '1' ? 'BIST:ALBRK' : grupSec == '2' ? 'BIST:AYGAZ' : grupSec == '3' ? 'BIST:BRSAN' : grupSec == '4' ? 'BIST:DGNMO' : grupSec == '5' ? 'BIST:EREGL' : grupSec == '6' ? 'BIST:GOZDE' : grupSec == '7' ? 'BIST:ISATR' : grupSec == '8' ? 'BIST:KMPUR' : grupSec == '9' ? 'BIST:MARBL' : grupSec == '10' ? 'BIST:OFSYM' : grupSec == '11' ? 'BIST:PRKAB' : grupSec == '12' ? 'BIST:SMART' : grupSec == '13' ? 'BIST:TSKB' : grupSec == '14' ? 'BIST:YGYO' : grupSec == 'ÖZEL LİSTE' ? sb26 : na
+a27 = grupSec == '1' ? 'BIST:ALCAR' : grupSec == '2' ? 'BIST:AZTEK' : grupSec == '3' ? 'BIST:BRYAT' : grupSec == '4' ? 'BIST:DIRIT' : grupSec == '5' ? 'BIST:ERSU' : grupSec == '6' ? 'BIST:GRNYO' : grupSec == '7' ? 'BIST:ISBIR' : grupSec == '8' ? 'BIST:KNFRT' : grupSec == '9' ? 'BIST:MARKA' : grupSec == '10' ? 'BIST:ONCSM' : grupSec == '11' ? 'BIST:PRKME' : grupSec == '12' ? 'BIST:SMRTG' : grupSec == '13' ? 'BIST:TSPOR' : grupSec == '14' ? 'BIST:YKBNK' : grupSec == 'ÖZEL LİSTE' ? sb27 : na
+a28 = grupSec == '1' ? 'BIST:ALCTL' : grupSec == '2' ? 'BIST:BAGFS' : grupSec == '3' ? 'BIST:BSOKE' : grupSec == '4' ? 'BIST:DITAS' : grupSec == '5' ? 'BIST:ESCAR' : grupSec == '6' ? 'BIST:GRSEL' : grupSec == '7' ? 'BIST:ISBTR' : grupSec == '8' ? 'BIST:KONKA' : grupSec == '9' ? 'BIST:MARTI' : grupSec == '10' ? 'BIST:ORCAY' : grupSec == '11' ? 'BIST:PRZMA' : grupSec == '12' ? 'BIST:SNGYO' : grupSec == '13' ? 'BIST:TTKOM' : grupSec == '14' ? 'BIST:YKSLN' : grupSec == 'ÖZEL LİSTE' ? sb28 : na
+a29 = grupSec == '1' ? 'BIST:ALFAS' : grupSec == '2' ? 'BIST:BAKAB' : grupSec == '3' ? 'BIST:BTCIM' : grupSec == '4' ? 'BIST:DMRGD' : grupSec == '5' ? 'BIST:ESCOM' : grupSec == '6' ? 'BIST:GRTRK' : grupSec == '7' ? 'BIST:ISCTR' : grupSec == '8' ? 'BIST:KONTR' : grupSec == '9' ? 'BIST:MAVI' : grupSec == '10' ? 'BIST:ORGE' : grupSec == '11' ? 'BIST:PSDTC' : grupSec == '12' ? 'BIST:SNICA' : grupSec == '13' ? 'BIST:TTRAK' : grupSec == '14' ? 'BIST:YONGA' : grupSec == 'ÖZEL LİSTE' ? sb29 : na
+a30 = grupSec == '1' ? 'BIST:ALGYO' : grupSec == '2' ? 'BIST:BALAT' : grupSec == '3' ? 'BIST:BUCIM' : grupSec == '4' ? 'BIST:DMSAS' : grupSec == '5' ? 'BIST:ESEN' : grupSec == '6' ? 'BIST:GSDDE' : grupSec == '7' ? 'BIST:ISDMR' : grupSec == '8' ? 'BIST:KONYA' : grupSec == '9' ? 'BIST:MEDTR' : grupSec == '10' ? 'BIST:ORMA' : grupSec == '11' ? 'BIST:PSGYO' : grupSec == '12' ? 'BIST:SNKRN' : grupSec == '13' ? 'BIST:TUCLK' : grupSec == '14' ? 'BIST:YUNSA' : grupSec == 'ÖZEL LİSTE' ? sb30 : na
+a31 = grupSec == '1' ? 'BIST:ALKA' : grupSec == '2' ? 'BIST:BANVT' : grupSec == '3' ? 'BIST:BURCE' : grupSec == '4' ? 'BIST:DNISI' : grupSec == '5' ? 'BIST:ETILR' : grupSec == '6' ? 'BIST:GSDHO' : grupSec == '7' ? 'BIST:ISFIN' : grupSec == '8' ? 'BIST:KOPOL' : grupSec == '9' ? 'BIST:MEGAP' : grupSec == '10' ? 'BIST:OSMEN' : grupSec == '11' ? 'BIST:QNBFB' : grupSec == '12' ? 'BIST:SNPAM' : grupSec == '13' ? 'BIST:TUKAS' : grupSec == '14' ? 'BIST:YYAPI' : grupSec == 'ÖZEL LİSTE' ? sb31 : na
+a32 = grupSec == '1' ? 'BIST:ALKIM' : grupSec == '2' ? 'BIST:BARMA' : grupSec == '3' ? 'BIST:BURVA' : grupSec == '4' ? 'BIST:DOAS' : grupSec == '5' ? 'BIST:ETYAT' : grupSec == '6' ? 'BIST:GSRAY' : grupSec == '7' ? 'BIST:ISGSY' : grupSec == '8' ? 'BIST:KORDS' : grupSec == '9' ? 'BIST:MEGMT' : grupSec == '10' ? 'BIST:OSTIM' : grupSec == '11' ? 'BIST:QNBFL' : grupSec == '12' ? 'BIST:SODSN' : grupSec == '13' ? 'BIST:TUPRS' : grupSec == '14' ? 'BIST:YYLGD' : grupSec == 'ÖZEL LİSTE' ? sb32 : na
+a33 = grupSec == '1' ? 'BIST:ALMAD' : grupSec == '2' ? 'BIST:BASCM' : grupSec == '3' ? 'BIST:BVSAN' : grupSec == '4' ? 'BIST:DOBUR' : grupSec == '5' ? 'BIST:EUHOL' : grupSec == '6' ? 'BIST:GUBRF' : grupSec == '7' ? 'BIST:ISGYO' : grupSec == '8' ? 'BIST:KOZAA' : grupSec == '9' ? 'BIST:MEKAG' : grupSec == '10' ? 'BIST:OTKAR' : grupSec == '11' ? 'BIST:QUAGR' : grupSec == '12' ? 'BIST:SOKE' : grupSec == '13' ? 'BIST:TUREX' : grupSec == '14' ? 'BIST:ZEDUR' : grupSec == 'ÖZEL LİSTE' ? sb33 : na
+a34 = grupSec == '1' ? 'BIST:ALTIN' : grupSec == '2' ? 'BIST:BASGZ' : grupSec == '3' ? 'BIST:BYDNR' : grupSec == '4' ? 'BIST:DOCO' : grupSec == '5' ? 'BIST:EUKYO' : grupSec == '6' ? 'BIST:GWIND' : grupSec == '7' ? 'BIST:ISKPL' : grupSec == '8' ? 'BIST:KOZAL' : grupSec == '9' ? 'BIST:MEPET' : grupSec == '10' ? 'BIST:OTTO' : grupSec == '11' ? 'BIST:RALYH' : grupSec == '12' ? 'BIST:SOKM' : grupSec == '13' ? 'BIST:TURGG' : grupSec == '14' ? 'BIST:ZOREN' : grupSec == 'ÖZEL LİSTE' ? sb34 : na
+a35 = grupSec == '1' ? 'BIST:ALVES' : grupSec == '2' ? 'BIST:BAYRK' : grupSec == '3' ? 'BIST:CANTE' : grupSec == '4' ? 'BIST:DOFER' : grupSec == '5' ? 'BIST:EUPWR' : grupSec == '6' ? 'BIST:GZNMI' : grupSec == '7' ? 'BIST:ISKUR' : grupSec == '8' ? 'BIST:KRDMA' : grupSec == '9' ? 'BIST:MERCN' : grupSec == '10' ? 'BIST:OYAKC' : grupSec == '11' ? 'BIST:RAYSG' : grupSec == '12' ? 'BIST:SONME' : grupSec == '13' ? 'BIST:TURSG' : grupSec == '14' ? 'BIST:ZRGYO' : grupSec == 'ÖZEL LİSTE' ? sb35 : na
+//a36 = grupSec == '1' ? 'BIST:ANELE' : grupSec == '2' ? 'BIST:BEGYO' : grupSec == '3' ? 'BIST:CASA' : grupSec == '4' ? 'BIST:DOGUB' : grupSec == '5' ? 'BIST:EUREN' : grupSec == '6' ? 'BIST:HALKB' : grupSec == '7' ? 'BIST:ISMEN' : grupSec == '8' ? 'BIST:KRDMB' : grupSec == '9' ? 'BIST:MERIT' : grupSec == '10' ? 'BIST:OYAYO' : grupSec == '11' ? 'BIST:REEDR' : grupSec == '12' ? 'BIST:SRVGY' : grupSec == '13' ? 'BIST:UFUK' : grupSec == '14' ? '' : grupSec == 'ÖZEL LİSTE' ? sb36 : na
+//a37 = grupSec == '1' ? 'BIST:ANGEN' : grupSec == '2' ? 'BIST:BERA' : grupSec == '3' ? 'BIST:CATES' : grupSec == '4' ? 'BIST:DOHOL' : grupSec == '5' ? 'BIST:EUYO' : grupSec == '6' ? 'BIST:HATEK' : grupSec == '7' ? 'BIST:ISSEN' : grupSec == '8' ? 'BIST:KRDMD' : grupSec == '9' ? 'BIST:MERKO' : grupSec == '10' ? 'BIST:OYLUM' : grupSec == '11' ? 'BIST:RNPOL' : grupSec == '12' ? 'BIST:SUMAS' : grupSec == '13' ? 'BIST:ULAS' : grupSec == '14' ? '' : grupSec == 'ÖZEL LİSTE' ? sb37 : na
+//a38 = grupSec == '1' ? 'BIST:ANHYT' : grupSec == '2' ? 'BIST:BEYAZ' : grupSec == '3' ? 'BIST:CCOLA' : grupSec == '4' ? 'BIST:DOKTA' : grupSec == '5' ? 'BIST:EYGYO' : grupSec == '6' ? 'BIST:HATSN' : grupSec == '7' ? 'BIST:IZENR' : grupSec == '8' ? 'BIST:KRGYO' : grupSec == '9' ? 'BIST:METRO' : grupSec == '10' ? 'BIST:OYYAT' : grupSec == '11' ? 'BIST:RODRG' : grupSec == '12' ? 'BIST:SUNTK' : grupSec == '13' ? 'BIST:ULKER' : grupSec == '14' ? '' : grupSec == 'ÖZEL LİSTE' ? sb38 : na
+//a39 = grupSec == '1' ? 'BIST:ANSGR' : grupSec == '2' ? 'BIST:BFREN' : grupSec == '3' ? 'BIST:CELHA' : grupSec == '4' ? 'BIST:DURDO' : grupSec == '5' ? 'BIST:FADE' : grupSec == '6' ? 'BIST:HDFGS' : grupSec == '7' ? 'BIST:IZFAS' : grupSec == '8' ? 'BIST:KRONT' : grupSec == '9' ? 'BIST:METUR' : grupSec == '10' ? 'BIST:OZGYO' : grupSec == '11' ? 'BIST:RTALB' : grupSec == '12' ? 'BIST:SURGY' : grupSec == '13' ? 'BIST:ULUFA' : grupSec == '14' ? '' : grupSec == 'ÖZEL LİSTE' ? sb39 : na
+//a40 = grupSec == '1' ? 'BIST:ARASE' : grupSec == '2' ? 'BIST:BIENY' : grupSec == '3' ? 'BIST:CEMAS' : grupSec == '4' ? 'BIST:DYOBY' : grupSec == '5' ? 'BIST:FENER' : grupSec == '6' ? 'BIST:HEDEF' : grupSec == '7' ? 'BIST:IZINV' : grupSec == '8' ? 'BIST:KRPLS' : grupSec == '9' ? 'BIST:MGROS' : grupSec == '10' ? 'BIST:OZKGY' : grupSec == '11' ? 'BIST:RUBNS' : grupSec == '12' ? 'BIST:SUWEN' : grupSec == '13' ? 'BIST:ULUSE' : grupSec == '14' ? '' : grupSec == 'ÖZEL LİSTE' ? sb40 : na
+
+
+[v1,s155] = request.security(a01, per, func())
+[v2,s255] = request.security(a02, per, func())
+[v3,s355] = request.security(a03, per, func())
+[v4,s455] = request.security(a04, per, func())
+[v5,s555] = request.security(a05, per, func())
+[v6,s655] = request.security(a06, per, func())
+[v7,s755] = request.security(a07, per, func())
+[v8,s855] = request.security(a08, per, func())
+[v9,s955] = request.security(a09, per, func())
+[v10,s10] = request.security(a10, per, func())
+[v11,s11] = request.security(a11, per, func())
+[v12,s12] = request.security(a12, per, func())
+[v13,s13] = request.security(a13, per, func())
+[v14,s14] = request.security(a14, per, func())
+[v15,s15] = request.security(a15, per, func())
+[v16,s16] = request.security(a16, per, func())
+[v17,s17] = request.security(a17, per, func())
+[v18,s18] = request.security(a18, per, func())
+[v19,s19] = request.security(a19, per, func())
+[v20,s20] = request.security(a20, per, func())
+[v21,s21] = request.security(a21, per, func())
+[v22,s22] = request.security(a22, per, func())
+[v23,s23] = request.security(a23, per, func())
+[v24,s24] = request.security(a24, per, func())
+[v25,s25] = request.security(a25, per, func())
+[v26,s26] = request.security(a26, per, func())
+[v27,s27] = request.security(a27, per, func())
+[v28,s28] = request.security(a28, per, func())
+[v29,s29] = request.security(a29, per, func())
+[v30,s30] = request.security(a30, per, func())
+[v31,s31] = request.security(a31, per, func())
+[v32,s32] = request.security(a32, per, func())
+[v33,s33] = request.security(a33, per, func())
+[v34,s34] = request.security(a34, per, func())
+[v35,s35] = request.security(a35, per, func())
+//[v36,s36] = request.security(a36, per, func())
+//[v37,s37] = request.security(a37, per, func())
+//[v38,s38] = request.security(a38, per, func())
+//[v39,s39] = request.security(a39, per, func())
+//[v40,s40] = request.security(a40, per, func())
+
+roundn(x, n) =>
+    mult = 1
+    if n != 0
+        for i = 1 to math.abs(n) by 1
+            mult *= 10
+            mult
+
+    n >= 0 ? math.round(x * mult) / mult : math.round(x / mult) * mult
+
+
+scr_label = 'MP Pozitif olanlar\n'
+scr_label := s155 ? scr_label + syminfo.ticker(a01) + ' ' + str.tostring(roundn(v1, 2)) + '\n' : scr_label
+scr_label := s255 ? scr_label + syminfo.ticker(a02) + ' ' + str.tostring(roundn(v2, 2)) + '\n' : scr_label
+scr_label := s355 ? scr_label + syminfo.ticker(a03) + ' ' + str.tostring(roundn(v3, 2)) + '\n' : scr_label
+scr_label := s455 ? scr_label + syminfo.ticker(a04) + ' ' + str.tostring(roundn(v4, 2)) + '\n' : scr_label
+scr_label := s555 ? scr_label + syminfo.ticker(a05) + ' ' + str.tostring(roundn(v5, 2)) + '\n' : scr_label
+scr_label := s655 ? scr_label + syminfo.ticker(a06) + ' ' + str.tostring(roundn(v6, 2)) + '\n' : scr_label
+scr_label := s755 ? scr_label + syminfo.ticker(a07) + ' ' + str.tostring(roundn(v7, 2)) + '\n' : scr_label
+scr_label := s855 ? scr_label + syminfo.ticker(a08) + ' ' + str.tostring(roundn(v8, 2)) + '\n' : scr_label
+scr_label := s955 ? scr_label + syminfo.ticker(a09) + ' ' + str.tostring(roundn(v9, 2)) + '\n' : scr_label
+scr_label := s10 ? scr_label + syminfo.ticker(a10) + ' ' + str.tostring(roundn(v10, 2)) + '\n' : scr_label
+scr_label := s11 ? scr_label + syminfo.ticker(a11) + ' ' + str.tostring(roundn(v11, 2)) + '\n' : scr_label
+scr_label := s12 ? scr_label + syminfo.ticker(a12) + ' ' + str.tostring(roundn(v12, 2)) + '\n' : scr_label
+scr_label := s13 ? scr_label + syminfo.ticker(a13) + ' ' + str.tostring(roundn(v13, 2)) + '\n' : scr_label
+scr_label := s14 ? scr_label + syminfo.ticker(a14) + ' ' + str.tostring(roundn(v14, 2)) + '\n' : scr_label
+scr_label := s15 ? scr_label + syminfo.ticker(a15) + ' ' + str.tostring(roundn(v15, 2)) + '\n' : scr_label
+scr_label := s16 ? scr_label + syminfo.ticker(a16) + ' ' + str.tostring(roundn(v16, 2)) + '\n' : scr_label
+scr_label := s17 ? scr_label + syminfo.ticker(a17) + ' ' + str.tostring(roundn(v17, 2)) + '\n' : scr_label
+scr_label := s18 ? scr_label + syminfo.ticker(a18) + ' ' + str.tostring(roundn(v18, 2)) + '\n' : scr_label
+scr_label := s19 ? scr_label + syminfo.ticker(a19) + ' ' + str.tostring(roundn(v19, 2)) + '\n' : scr_label
+scr_label := s20 ? scr_label + syminfo.ticker(a20) + ' ' + str.tostring(roundn(v20, 2)) + '\n' : scr_label
+scr_label := s21 ? scr_label + syminfo.ticker(a21) + ' ' + str.tostring(roundn(v21, 2)) + '\n' : scr_label
+scr_label := s22 ? scr_label + syminfo.ticker(a22) + ' ' + str.tostring(roundn(v22, 2)) + '\n' : scr_label
+scr_label := s23 ? scr_label + syminfo.ticker(a23) + ' ' + str.tostring(roundn(v23, 2)) + '\n' : scr_label
+scr_label := s24 ? scr_label + syminfo.ticker(a24) + ' ' + str.tostring(roundn(v24, 2)) + '\n' : scr_label
+scr_label := s25 ? scr_label + syminfo.ticker(a25) + ' ' + str.tostring(roundn(v25, 2)) + '\n' : scr_label
+scr_label := s26 ? scr_label + syminfo.ticker(a26) + ' ' + str.tostring(roundn(v26, 2)) + '\n' : scr_label
+scr_label := s27 ? scr_label + syminfo.ticker(a27) + ' ' + str.tostring(roundn(v27, 2)) + '\n' : scr_label
+scr_label := s28 ? scr_label + syminfo.ticker(a28) + ' ' + str.tostring(roundn(v28, 2)) + '\n' : scr_label
+scr_label := s29 ? scr_label + syminfo.ticker(a29) + ' ' + str.tostring(roundn(v29, 2)) + '\n' : scr_label
+scr_label := s30 ? scr_label + syminfo.ticker(a30) + ' ' + str.tostring(roundn(v30, 2)) + '\n' : scr_label
+scr_label := s31 ? scr_label + syminfo.ticker(a31) + ' ' + str.tostring(roundn(v31, 2)) + '\n' : scr_label
+scr_label := s32 ? scr_label + syminfo.ticker(a32) + ' ' + str.tostring(roundn(v32, 2)) + '\n' : scr_label
+scr_label := s33 ? scr_label + syminfo.ticker(a33) + ' ' + str.tostring(roundn(v33, 2)) + '\n' : scr_label
+scr_label := s34 ? scr_label + syminfo.ticker(a34) + ' ' + str.tostring(roundn(v34, 2)) + '\n' : scr_label
+scr_label := s35 ? scr_label + syminfo.ticker(a35) + ' ' + str.tostring(roundn(v35, 2)) + '\n' : scr_label
+//scr_label := s36 ? scr_label + syminfo.ticker(a36) + ' ' + str.tostring(roundn(v36, 2)) + '\n' : scr_label
+//scr_label := s37 ? scr_label + syminfo.ticker(a37) + ' ' + str.tostring(roundn(v37, 2)) + '\n' : scr_label
+//scr_label := s38 ? scr_label + syminfo.ticker(a38) + ' ' + str.tostring(roundn(v38, 2)) + '\n' : scr_label
+//scr_label := s39 ? scr_label + syminfo.ticker(a39) + ' ' + str.tostring(roundn(v39, 2)) + '\n' : scr_label
+//scr_label := s40 ? scr_label + syminfo.ticker(a40) + ' ' + str.tostring(roundn(v40, 2)) + '\n' : scr_label
+
+
+if Nht
+
+
+    lab_1 = label.new(bar_index + loc,close, scr_label, color=color.green, textcolor=color.white, style=label.style_label_center)
+    label.delete(lab_1[1])
+table.cell(tb, 0, 0, 'combo code', text_size = size.small, text_color = #ffffff)
+
+if str.length(scr_label) > 8
+    alert(scr_label,alert.freq_once_per_bar_close)
+//------------------------------------------------------
+
+
+
+
+
