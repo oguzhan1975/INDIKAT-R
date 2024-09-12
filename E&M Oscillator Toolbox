@@ -1,0 +1,81 @@
+//@version=5
+indicator("E&M Oscillator Toolbox", overlay = false)
+
+// Oscillator Selection Menu
+oscillator = input.string(defval="RSI", 
+     title="Select Oscillator", 
+     options=["RSI", "MACD", "STOCHASTIC", "CCI", "MFI", "DMI"])
+
+// User Inputs for Each Oscillator
+dummy1 = input.bool(true, title = "========== RSI Options =================")
+rsi_length = input.int(14, title="RSI Length")
+
+dummy2 = input.bool(true, title = "========== MACD Options ================")
+macd_fast_length = input.int(12, title="MACD Fast Length")
+macd_slow_length = input.int(26, title="MACD Slow Length")
+macd_signal_length = input.int(9, title="MACD Signal Length")
+
+dummy3 = input.bool(true, title = "========== Stochastic Options ==========")
+stoch_periodK = input.int(14, title="%K Length", minval=1)
+stoch_smoothK = input.int(5, title="%K Smoothing", minval=1)
+stoch_periodD = input.int(3, title="%D Smoothing", minval=1)
+dummy4 = input.bool(true, title = "========== CCI Options =================")
+cci_length = input.int(20, title="CCI Length")
+
+dummy5 = input.bool(true, title = "========== MFI Options =================")
+mfi_length = input.int(14, title="MFI Length")
+
+dummy6 = input.bool(true, title = "========== Directional Movement Index ==")
+dmi_length = input.int(14, title="DMI Length")
+adx_smoothing = input.int(14, title="ADX Smoothing")
+
+// Oscillator Calculations
+rsi_val = ta.rsi(close, rsi_length)
+[macdLine, signalLine, _] = ta.macd(close, macd_fast_length, macd_slow_length, macd_signal_length)
+stoch_k = ta.sma(ta.stoch(close, high, low, stoch_periodK), stoch_smoothK)
+stoch_d = ta.sma(stoch_k, stoch_periodD)
+cci_val = ta.cci(close, cci_length)
+mfi_val = ta.mfi(hlc3, mfi_length)
+
+// DMI Calculations (+DI, -DI, and ADX)
+[dmi_plus_di, dmi_minus_di, adx_val] = ta.dmi(dmi_length, adx_smoothing)
+
+// Conditional Plot Values
+rsi_plot = oscillator == "RSI" ? rsi_val : na
+macd_plot = oscillator == "MACD" ? macdLine : na
+signal_plot = oscillator == "MACD" ? signalLine : na
+stoch_k_plot = oscillator == "STOCHASTIC" ? stoch_k : na
+stoch_d_plot = oscillator == "STOCHASTIC" ? stoch_d : na
+cci_plot = oscillator == "CCI" ? cci_val : na
+mfi_plot = oscillator == "MFI" ? mfi_val : na
+dmi_plus_di_plot = oscillator == "DMI" ? dmi_plus_di : na
+dmi_minus_di_plot = oscillator == "DMI" ? dmi_minus_di : na
+adx_plot = oscillator == "DMI" ? adx_val : na
+
+// Plotting the Indicators
+plot(rsi_plot, "RSI", color=color.blue)
+plot(macd_plot, "MACD Line", color=color.blue)
+plot(signal_plot, "Signal Line", color=color.orange)
+plot(stoch_k_plot, "%K Line", color=color.blue)
+plot(stoch_d_plot, "%D Line", color=color.red)
+plot(cci_plot, "CCI", color=color.black)
+plot(mfi_plot, "MFI", color=color.blue)
+plot(dmi_plus_di_plot, "+DI", color=color.green)
+plot(dmi_minus_di_plot, "-DI", color=color.red)
+plot(adx_plot, "ADX", color=color.purple)
+
+// Overbought / Oversold Levels
+hline(oscillator == "RSI" ? 70 : na, "Overbought (RSI)", color=color.red)
+hline(oscillator == "RSI" ? 50 : na, "Middle (RSI)", color=color.black)
+hline(oscillator == "RSI" ? 30 : na, "Oversold (RSI)", color=color.green)
+
+hline(oscillator == "STOCHASTIC" ? 80 : na, "Overbought (Stochastic)", color=color.red)
+hline(oscillator == "STOCHASTIC" ? 20 : na, "Oversold (Stochastic)", color=color.green)
+
+hline(oscillator == "CCI" ? 100 : na, "Overbought (CCI)", color=color.red)
+hline(oscillator == "CCI" ? -100 : na, "Oversold (CCI)", color=color.green)
+
+hline(oscillator == "MFI" ? 80 : na, "Overbought (MFI)", color=color.red)
+hline(oscillator == "MFI" ? 20 : na, "Oversold (MFI)", color=color.green)
+
+hline(oscillator == "MACD" ? 0 : na, "Zero Line (MACD)", color=color.gray)
