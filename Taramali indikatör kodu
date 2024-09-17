@@ -1,0 +1,839 @@
+//@version=5
+indicator("Screener Pattern", overlay=true)
+dummy1 = input(true, title = "========== Input Options ===========")
+
+//######################## Input Parameters ##############################
+mo_len1 = input.int(defval=9, minval=2, title="First MA Length")
+mo_len2 = input.int(defval=21, minval=2, title="Second MA Length")
+mo_src = input.source(close, title="MA Source")
+
+show_mo = input.bool(defval=true, title="Show MA Signals?")
+show_mo_cross_signal = input.bool(defval=true, title="Show MA Crossing Signals?")
+
+//######################## Input Conditions ##############################
+first_mo = ta.ema(mo_src,mo_len1)
+second_mo = ta.ema(mo_src,mo_len2)
+
+mo_buy=ta.crossover(first_mo,second_mo)
+mo_sell=ta.crossunder(first_mo,second_mo)
+
+plot(show_mo? first_mo:na, title="First MA Line", style=plot.style_linebr, linewidth=2, color=color.green)
+plot(show_mo? second_mo:na, title="Second MA Line", style=plot.style_linebr, linewidth=2, color=color.red)
+
+plotshape(show_mo_cross_signal and mo_buy? first_mo : na, title="MA BUY", text="BUY", location=location.absolute, style=shape.labelup, size=size.tiny, color=color.blue, textcolor=color.white, transp=0)
+plotshape(show_mo_cross_signal and mo_sell? second_mo : na, title="MA SELL", text="SELL", location=location.absolute, style=shape.labeldown, size=size.tiny, color=color.blue, textcolor=color.white, transp=0)
+
+//######################## Buy/Sell Conditions ###########################
+buy = mo_buy
+sell = mo_sell
+//######################## Screener Options ##############################
+
+dummy2 = input(true, title = "========== Stock Screener Options ===========")
+
+st_sc = input.bool(false, title="Enable Stock Screener?")
+List = input.string(defval='LIST 1', options=['LIST 1', 'LIST 2', 'LIST 3', 'LIST 4', 'LIST 5','LIST 6','LIST 7','LIST 8','LIST 9','LIST 10','LIST 11','LIST 12','LIST 13','LIST 14','LIST 15','MY LIST'], title="Symbol Lists")
+look_for = input.string(defval = "BUY", title = "Stock Screener Condition?", options=["BUY","SELL"])
+//######################## Strategy ############################
+condition=look_for=="BUY"?buy:look_for=="SELL"?sell:na
+//######################## Symbol Lists ##############################
+dummy3 = input(true, title = "========== My Symbol Lists =================")
+
+List_01=input.symbol('XAUUSD',    title='Symbol 01')
+List_02=input.symbol('XAUTRYG',   title='Symbol 02')
+List_03=input.symbol('USDTRY',    title='Symbol 03')
+List_04=input.symbol('EURTRY',    title='Symbol 04')
+List_05=input.symbol('XU100',     title='Symbol 05')
+List_06=input.symbol('BTCUSD',    title='Symbol 06')
+List_07=input.symbol('AKBNK',     title='Symbol 07')
+List_08=input.symbol('ALARK',     title='Symbol 08')
+List_09=input.symbol('ASELS',     title='Symbol 09')
+List_10=input.symbol('ASTOR',     title='Symbol 10')
+List_11=input.symbol("BIMAS",     title='Symbol 11')
+List_12=input.symbol('BRSAN',     title='Symbol 12')
+List_13=input.symbol('DOAS',      title='Symbol 13')
+List_14=input.symbol('EKGYO',     title='Symbol 14')
+List_15=input.symbol('ENKAI',     title='Symbol 15')
+List_16=input.symbol('EREGL',     title='Symbol 16')
+List_17=input.symbol('FROTO',     title='Symbol 17')
+List_18=input.symbol('GARAN',     title='Symbol 18')
+List_19=input.symbol('GUBRF',     title='Symbol 19')
+List_20=input.symbol('HEKTS',     title='Symbol 20')
+List_21=input.symbol('ISCTR',     title='Symbol 21')
+List_22=input.symbol('KCHOL',     title='Symbol 22')
+List_23=input.symbol('KONTR',     title='Symbol 23')
+List_24=input.symbol("KOZAL",     title='Symbol 24')
+List_25=input.symbol("KRDMD",     title='Symbol 25')
+List_26=input.symbol("OYAKC",     title='Symbol 26')
+List_27=input.symbol("PETKM",     title='Symbol 27')
+List_28=input.symbol("PGSUS",     title='Symbol 28')
+List_29=input.symbol("SAHOL",     title='Symbol 29')
+List_30=input.symbol("SASA",      title='Symbol 30')
+List_31=input.symbol("SISE",      title='Symbol 31')
+List_32=input.symbol("TCELL",     title='Symbol 32')
+List_33=input.symbol("THYAO",     title='Symbol 33')
+List_34=input.symbol("TOASO",     title='Symbol 34')
+List_35=input.symbol("TUPRS",     title='Symbol 35')
+List_36=input.symbol("YKBNK",     title='Symbol 36')
+List_37=input.symbol("",          title='Symbol 37')
+List_38=input.symbol("",          title='Symbol 38')
+List_39=input.symbol("",          title='Symbol 39')
+List_40=input.symbol("",          title='Symbol 40')
+
+//######################## Bist Lists ##############################
+
+c1="A1CAP"
+c2="ACSEL"
+c3="ADEL"
+c4="ADESE"
+c5="ADGYO"
+c6="AEFES"
+c7="AFYON"
+c8="AGESA"
+c9="AGHOL"
+c10="AGROT"
+c11="AGYO"
+c12="AHGAZ"
+c13="AHSGY"
+c14="AKBNK"
+c15="AKCNS"
+c16="AKENR"
+c17="AKFGY"
+c18="AKFYE"
+c19="AKGRT"
+c20="AKMGY"
+c21="AKSA"
+c22="AKSEN"
+c23="AKSGY"
+c24="AKSUE"
+c25="AKYHO"
+c26="ALARK"
+c27="ALBRK"
+c28="ALCAR"
+c29="ALCTL"
+c30="ALFAS"
+c31="ALGYO"
+c32="ALKA"
+c33="ALKIM"
+c34="ALKLC"
+c35="ALMAD"
+c36="ALTIN"
+c37="ALTNY"
+c38="ALVES"
+c39="ANELE"
+c40="ANGEN"
+d1="ANHYT"
+d2="ANSGR"
+d3="ARASE"
+d4="ARCLK"
+d5="ARDYZ"
+d6="ARENA"
+d7="ARSAN"
+d8="ARTMS"
+d9="ARZUM"
+d10="ASELS"
+d11="ASGYO"
+d12="ASTOR"
+d13="ASUZU"
+d14="ATAGY"
+d15="ATAKP"
+d16="ATATP"
+d17="ATEKS"
+d18="ATLAS"
+d19="ATSYH"
+d20="AVGYO"
+d21="AVHOL"
+d22="AVOD"
+d23="AVPGY"
+d24="AVTUR"
+d25="AYCES"
+d26="AYDEM"
+d27="AYEN"
+d28="AYES"
+d29="AYGAZ"
+d30="AZTEK"
+d31="BAGFS"
+d32="BAHKM"
+d33="BAKAB"
+d34="BALAT"
+d35="BANVT"
+d36="BARMA"
+d37="BASCM"
+d38="BASGZ"
+d39="BAYRK"
+d40="BEGYO"
+e1="BERA"
+e2="BEYAZ"
+e3="BFREN"
+e4="BIENY"
+e5="BIGCH"
+e6="BIMAS"
+e7="BINHO"
+e8="BIOEN"
+e9="BIZIM"
+e10="BJKAS"
+e11="BLCYT"
+e12="BMSCH"
+e13="BMSTL"
+e14="BNTAS"
+e15="BOBET"
+e16="BORLS"
+e17="BORSK"
+e18="BOSSA"
+e19="BRISA"
+e20="BRKO"
+e21="BRKSN"
+e22="BRKVY"
+e23="BRLSM"
+e24="BRMEN"
+e25="BRSAN"
+e26="BRYAT"
+e27="BSOKE"
+e28="BTCIM"
+e29="BUCIM"
+e30="BURCE"
+e31="BURVA"
+e32="BVSAN"
+e33="BYDNR"
+e34="CANTE"
+e35="CASA"
+e36="CATES"
+e37="CCOLA"
+e38="CELHA"
+e39="CEMAS"
+e40="CEMTS"
+f1="CEMZY"
+f2="CEOEM"
+f3="CIMSA"
+f4="CLEBI"
+f5="CMBTN"
+f6="CMENT"
+f7="CONSE"
+f8="COSMO"
+f9="CRDFA"
+f10="CRFSA"
+f11="CUSAN"
+f12="CVKMD"
+f13="CWENE"
+f14="DAGHL"
+f15="DAGI"
+f16="DAPGM"
+f17="DARDL"
+f18="DCTTR"
+f19="DENGE"
+f20="DERHL"
+f21="DERIM"
+f22="DESA"
+f23="DESPC"
+f24="DEVA"
+f25="DGATE"
+f26="DGGYO"
+f27="DGNMO"
+f28="DIRIT"
+f29="DITAS"
+f30="DMRGD"
+f31="DMSAS"
+f32="DNISI"
+f33="DOAS"
+f34="DOBUR"
+f35="DOCO"
+f36="DOFER"
+f37="DOGUB"
+f38="DOHOL"
+f39="DOKTA"
+f40="DURDO"
+g1="DYOBY"
+g2="DZGYO"
+g3="EBEBK"
+g4="ECILC"
+g5="ECZYT"
+g6="EDATA"
+g7="EDIP"
+g8="EFORC"
+g9="EGEEN"
+g10="EGEPO"
+g11="EGGUB"
+g12="EGPRO"
+g13="EGSER"
+g14="EKGYO"
+g15="EKIZ"
+g16="EKOS"
+g17="EKSUN"
+g18="ELITE"
+g19="EMKEL"
+g20="EMNIS"
+g21="ENERY"
+g22="ENJSA"
+g23="ENKAI"
+g24="ENSRI"
+g25="ENTRA"
+g26="EPLAS"
+g27="ERBOS"
+g28="ERCB"
+g29="EREGL"
+g30="ERSU"
+g31="ESCAR"
+g32="ESCOM"
+g33="ESEN"
+g34="ETILR"
+g35="ETYAT"
+g36="EUHOL"
+g37="EUKYO"
+g38="EUPWR"
+g39="EUREN"
+g40="EUYO"
+h1="EYGYO"
+h2="FADE"
+h3="FENER"
+h4="FLAP"
+h5="FMIZP"
+h6="FONET"
+h7="FORMT"
+h8="FORTE"
+h9="FRIGO"
+h10="FROTO"
+h11="FZLGY"
+h12="GARAN"
+h13="GARFA"
+h14="GEDIK"
+h15="GEDZA"
+h16="GENIL"
+h17="GENTS"
+h18="GEREL"
+h19="GESAN"
+h20="GIPTA"
+h21="GLBMD"
+h22="GLCVY"
+h23="GLRYH"
+h24="GLYHO"
+h25="GMTAS"
+h26="GOKNR"
+h27="GOLTS"
+h28="GOODY"
+h29="GOZDE"
+h30="GRNYO"
+h31="GRSEL"
+h32="GRTRK"
+h33="GSDDE"
+h34="GSDHO"
+h35="GSRAY"
+h36="GUBRF"
+h37="GUNDG"
+h38="GWIND"
+h39="GZNMI"
+h40="HALKB"
+i1="HATEK"
+i2="HATSN"
+i3="HDFGS"
+i4="HEDEF"
+i5="HEKTS"
+i6="HKTM"
+i7="HLGYO"
+i8="HOROZ"
+i9="HRKET"
+i10="HTTBT"
+i11="HUBVC"
+i12="HUNER"
+i13="HURGZ"
+i14="ICBCT"
+i15="ICUGS"
+i16="IDGYO"
+i17="IEYHO"
+i18="IHAAS"
+i19="IHEVA"
+i20="IHGZT"
+i21="IHLAS"
+i22="IHLGM"
+i23="IHYAY"
+i24="IMASM"
+i25="INDES"
+i26="INFO"
+i27="INGRM"
+i28="INTEK"
+i29="INTEM"
+i30="INVEO"
+i31="INVES"
+i32="IPEKE"
+i33="ISATR"
+i34="ISBIR"
+i35="ISBTR"
+i36="ISCTR"
+i37="ISDMR"
+i38="ISFIN"
+i39="ISGSY"
+i40="ISGYO"
+j1="ISKPL"
+j2="ISKUR"
+j3="ISMEN"
+j4="ISSEN"
+j5="ISYAT"
+j6="IZENR"
+j7="IZFAS"
+j8="IZINV"
+j9="IZMDC"
+j10="JANTS"
+j11="KAPLM"
+j12="KAREL"
+j13="KARSN"
+j14="KARTN"
+j15="KARYE"
+j16="KATMR"
+j17="KAYSE"
+j18="KBORU"
+j19="KCAER"
+j20="KCHOL"
+j21="KENT"
+j22="KERVN"
+j23="KERVT"
+j24="KFEIN"
+j25="KGYO"
+j26="KIMMR"
+j27="KLGYO"
+j28="KLKIM"
+j29="KLMSN"
+j30="KLNMA"
+j31="KLRHO"
+j32="KLSER"
+j33="KLSYN"
+j34="KMPUR"
+j35="KNFRT"
+j36="KOCMT"
+j37="KONKA"
+j38="KONTR"
+j39="KONYA"
+j40="KOPOL"
+k1="KORDS"
+k2="KOTON"
+k3="KOZAA"
+k4="KOZAL"
+k5="KRDMA"
+k6="KRDMB"
+k7="KRDMD"
+k8="KRGYO"
+k9="KRONT"
+k10="KRPLS"
+k11="KRSTL"
+k12="KRTEK"
+k13="KRVGD"
+k14="KSTUR"
+k15="KTLEV"
+k16="KTSKR"
+k17="KUTPO"
+k18="KUVVA"
+k19="KUYAS"
+k20="KZBGY"
+k21="KZGYO"
+k22="LIDER"
+k23="LIDFA"
+k24="LILAK"
+k25="LINK"
+k26="LKMNH"
+k27="LMKDC"
+k28="LOGO"
+k29="LRSHO"
+k30="LUKSK"
+k31="LYDHO"
+k32="MAALT"
+k33="MACKO"
+k34="MAGEN"
+k35="MAKIM"
+k36="MAKTK"
+k37="MANAS"
+k38="MARBL"
+k39="MARKA"
+k40="MARTI"
+l1="MAVI"
+l2="MEDTR"
+l3="MEGAP"
+l4="MEGMT"
+l5="MEKAG"
+l6="MEPET"
+l7="MERCN"
+l8="MERIT"
+l9="MERKO"
+l10="METRO"
+l11="METUR"
+l12="MGROS"
+l13="MHRGY"
+l14="MIATK"
+l15="MMCAS"
+l16="MNDRS"
+l17="MNDTR"
+l18="MOBTL"
+l19="MOGAN"
+l20="MPARK"
+l21="MRGYO"
+l22="MRSHL"
+l23="MSGYO"
+l24="MTRKS"
+l25="MTRYO"
+l26="MZHLD"
+l27="NATEN"
+l28="NETAS"
+l29="NIBAS"
+l30="NTGAZ"
+l31="NTHOL"
+l32="NUGYO"
+l33="NUHCM"
+l34="OBAMS"
+l35="OBASE"
+l36="ODAS"
+l37="ODINE"
+l38="OFSYM"
+l39="ONCSM"
+l40="ONRYT"
+m1="ORCAY"
+m2="ORGE"
+m3="ORMA"
+m4="OSMEN"
+m5="OSTIM"
+m6="OTKAR"
+m7="OTTO"
+m8="OYAKC"
+m9="OYAYO"
+m10="OYLUM"
+m11="OYYAT"
+m12="OZATD"
+m13="OZGYO"
+m14="OZKGY"
+m15="OZRDN"
+m16="OZSUB"
+m17="OZYSR"
+m18="PAGYO"
+m19="PAMEL"
+m20="PAPIL"
+m21="PARSN"
+m22="PASEU"
+m23="PATEK"
+m24="PCILT"
+m25="PEHOL"
+m26="PEKGY"
+m27="PENGD"
+m28="PENTA"
+m29="PETKM"
+m30="PETUN"
+m31="PGSUS"
+m32="PINSU"
+m33="PKART"
+m34="PKENT"
+m35="PLTUR"
+m36="PNLSN"
+m37="PNSUT"
+m38="POLHO"
+m39="POLTK"
+m40="PRDGS"
+n1="PRKAB"
+n2="PRKME"
+n3="PRZMA"
+n4="PSDTC"
+n5="PSGYO"
+n6="QNBFB"
+n7="QNBFL"
+n8="QUAGR"
+n9="RALYH"
+n10="RAYSG"
+n11="REEDR"
+n12="RGYAS"
+n13="RNPOL"
+n14="RODRG"
+n15="ROYAL"
+n16="RTALB"
+n17="RUBNS"
+n18="RYGYO"
+n19="RYSAS"
+n20="SAFKR"
+n21="SAHOL"
+n22="SAMAT"
+n23="SANEL"
+n24="SANFM"
+n25="SANKO"
+n26="SARKY"
+n27="SASA"
+n28="SAYAS"
+n29="SDTTR"
+n30="SEGMN"
+n31="SEGYO"
+n32="SEKFK"
+n33="SEKUR"
+n34="SELEC"
+n35="SELGD"
+n36="SELVA"
+n37="SEYKM"
+n38="SILVR"
+n39="SISE"
+n40="SKBNK"
+o1="SKTAS"
+o2="SKYLP"
+o3="SKYMD"
+o4="SMART"
+o5="SMRTG"
+o6="SNGYO"
+o7="SNICA"
+o8="SNKRN"
+o9="SNPAM"
+o10="SODSN"
+o11="SOKE"
+o12="SOKM"
+o13="SONME"
+o14="SRVGY"
+o15="SUMAS"
+o16="SUNTK"
+o17="SURGY"
+o18="SUWEN"
+o19="TABGD"
+o20="TARKM"
+o21="TATEN"
+o22="TATGD"
+o23="TAVHL"
+o24="TBORG"
+o25="TCELL"
+o26="TCKRC"
+o27="TDGYO"
+o28="TEKTU"
+o29="TERA"
+o30="TETMT"
+o31="TEZOL"
+o32="TGSAS"
+o33="THYAO"
+o34="TKFEN"
+o35="TKNSA"
+o36="TLMAN"
+o37="TMPOL"
+o38="TMSN"
+o39="TNZTP"
+o40="TOASO"
+p1="TRCAS"
+p2="TRGYO"
+p3="TRILC"
+p4="TSGYO"
+p5="TSKB"
+p6="TSPOR"
+p7="TTKOM"
+p8="TTRAK"
+p9="TUCLK"
+p10="TUKAS"
+p11="TUPRS"
+p12="TUREX"
+p13="TURGG"
+p14="TURSG"
+p15="UFUK"
+p16="ULAS"
+p17="ULKER"
+p18="ULUFA"
+p19="ULUSE"
+p20="ULUUN"
+p21="UMPAS"
+p22="UNLU"
+p23="USAK"
+p24="VAKBN"
+p25="VAKFN"
+p26="VAKKO"
+p27="VANGD"
+p28="VBTYZ"
+p29="VERTU"
+p30="VERUS"
+p31="VESBE"
+p32="VESTL"
+p33="VKFYO"
+p34="VKGYO"
+p35="VKING"
+p36="VRGYO"
+p37="YAPRK"
+p38="YATAS"
+p39="YAYLA"
+p40="YBTAS"
+r1="YEOTK"
+r2="YESIL"
+r3="YESIL"
+r4="YGGYO"
+r5="YGYO"
+r6="YIGIT"
+r7="YKBNK"
+r8="YKSLN"
+r9="YONGA"
+r10="YUNSA"
+r11="YYAPI"
+r12="YYLGD"
+r13="ZEDUR"
+r14="ZOREN"
+r15="ZRGYO"
+r16=""
+r17=""
+r18=""
+r19=""
+r20=""
+r21=""
+r22=""
+r23=""
+r24=""
+r25=""
+r26=""
+r27=""
+r28=""
+r29=""
+r30=""
+r31=""
+r32=""
+r33=""
+r34=""
+r35=""
+r36=""
+r37=""
+r38=""
+r39=""
+r40=""
+
+a1 = List == 'LIST 1' ? c1 : List == 'LIST 2' ? d1 : List == 'LIST 3' ? e1 : List == 'LIST 4' ? f1 : List == 'LIST 5' ? g1 : List == 'LIST 6' ? h1 : List == 'LIST 7' ? i1 : List == 'LIST 8' ? j1 : List == 'LIST 9' ? k1 : List == 'LIST 10' ? l1 : List =='LIST 11' ? m1 : List == 'LIST 12' ? n1 : List == 'LIST 13' ? o1 : List == 'LIST 14' ? p1 : List == 'LIST 15' ? r1 : List == 'MY LIST' ? List_01 : na
+a2 = List == 'LIST 1' ? c2 : List == 'LIST 2' ? d2 : List == 'LIST 3' ? e2 : List == 'LIST 4' ? f2 : List == 'LIST 5' ? g2 : List == 'LIST 6' ? h2 : List == 'LIST 7' ? i2 : List == 'LIST 8' ? j2 : List == 'LIST 9' ? k2 : List == 'LIST 10' ? l2 : List =='LIST 11' ? m2 : List == 'LIST 12' ? n2 : List == 'LIST 13' ? o2 : List == 'LIST 14' ? p2 : List == 'LIST 15' ? r2 : List == 'MY LIST' ? List_02 : na
+a3 = List == 'LIST 1' ? c3 : List == 'LIST 2' ? d3 : List == 'LIST 3' ? e3 : List == 'LIST 4' ? f3 : List == 'LIST 5' ? g3 : List == 'LIST 6' ? h3 : List == 'LIST 7' ? i3 : List == 'LIST 8' ? j3 : List == 'LIST 9' ? k3 : List == 'LIST 10' ? l3 : List =='LIST 11' ? m3 : List == 'LIST 12' ? n3 : List == 'LIST 13' ? o3 : List == 'LIST 14' ? p3 : List == 'LIST 15' ? r3 : List == 'MY LIST' ? List_03 : na
+a4 = List == 'LIST 1' ? c4 : List == 'LIST 2' ? d4 : List == 'LIST 3' ? e4 : List == 'LIST 4' ? f4 : List == 'LIST 5' ? g4 : List == 'LIST 6' ? h4 : List == 'LIST 7' ? i4 : List == 'LIST 8' ? j4 : List == 'LIST 9' ? k4 : List == 'LIST 10' ? l4 : List =='LIST 11' ? m4 : List == 'LIST 12' ? n4 : List == 'LIST 13' ? o4 : List == 'LIST 14' ? p4 : List == 'LIST 15' ? r4 : List == 'MY LIST' ? List_04 : na
+a5 = List == 'LIST 1' ? c5 : List == 'LIST 2' ? d5 : List == 'LIST 3' ? e5 : List == 'LIST 4' ? f5 : List == 'LIST 5' ? g5 : List == 'LIST 6' ? h5 : List == 'LIST 7' ? i5 : List == 'LIST 8' ? j5 : List == 'LIST 9' ? k5 : List == 'LIST 10' ? l5 : List =='LIST 11' ? m5 : List == 'LIST 12' ? n5 : List == 'LIST 13' ? o5 : List == 'LIST 14' ? p5 : List == 'LIST 15' ? r5 : List == 'MY LIST' ? List_05 : na
+a6 = List == 'LIST 1' ? c6 : List == 'LIST 2' ? d6 : List == 'LIST 3' ? e6 : List == 'LIST 4' ? f6 : List == 'LIST 5' ? g6 : List == 'LIST 6' ? h6 : List == 'LIST 7' ? i6 : List == 'LIST 8' ? j6 : List == 'LIST 9' ? k6 : List == 'LIST 10' ? l6 : List =='LIST 11' ? m6 : List == 'LIST 12' ? n6 : List == 'LIST 13' ? o6 : List == 'LIST 14' ? p6 : List == 'LIST 15' ? r6 : List == 'MY LIST' ? List_06 : na
+a7 = List == 'LIST 1' ? c7 : List == 'LIST 2' ? d7 : List == 'LIST 3' ? e7 : List == 'LIST 4' ? f7 : List == 'LIST 5' ? g7 : List == 'LIST 6' ? h7 : List == 'LIST 7' ? i7 : List == 'LIST 8' ? j7 : List == 'LIST 9' ? k7 : List == 'LIST 10' ? l7 : List =='LIST 11' ? m7 : List == 'LIST 12' ? n7 : List == 'LIST 13' ? o7 : List == 'LIST 14' ? p7 : List == 'LIST 15' ? r7 : List == 'MY LIST' ? List_07 : na
+a8 = List == 'LIST 1' ? c8 : List == 'LIST 2' ? d8 : List == 'LIST 3' ? e8 : List == 'LIST 4' ? f8 : List == 'LIST 5' ? g8 : List == 'LIST 6' ? h8 : List == 'LIST 7' ? i8 : List == 'LIST 8' ? j8 : List == 'LIST 9' ? k8 : List == 'LIST 10' ? l8 : List =='LIST 11' ? m8 : List == 'LIST 12' ? n8 : List == 'LIST 13' ? o8 : List == 'LIST 14' ? p8 : List == 'LIST 15' ? r8 : List == 'MY LIST' ? List_08 : na
+a9 = List == 'LIST 1' ? c9 : List == 'LIST 2' ? d9 : List == 'LIST 3' ? e9 : List == 'LIST 4' ? f9 : List == 'LIST 5' ? g9 : List == 'LIST 6' ? h9 : List == 'LIST 7' ? i9 : List == 'LIST 8' ? j9 : List == 'LIST 9' ? k9 : List == 'LIST 10' ? l9 : List =='LIST 11' ? m9 : List == 'LIST 12' ? n9 : List == 'LIST 13' ? o9 : List == 'LIST 14' ? p9 : List == 'LIST 15' ? r9 : List == 'MY LIST' ? List_10 : na
+a10 = List == 'LIST 1' ? c10 : List == 'LIST 2' ? d10 : List == 'LIST 3' ? e10 : List == 'LIST 4' ? f10 : List == 'LIST 5' ? g10 : List == 'LIST 6' ? h10 : List == 'LIST 7' ? i10 : List == 'LIST 8' ? j10 : List == 'LIST 9' ? k10 : List == 'LIST 10' ? l10 : List =='LIST 11' ? m10 : List == 'LIST 12' ? n10 : List == 'LIST 13' ? o10 : List == 'LIST 14' ? p10 : List == 'LIST 15' ? r10 : List == 'MY LIST' ? List_01 : na
+a11 = List == 'LIST 1' ? c11 : List == 'LIST 2' ? d11 : List == 'LIST 3' ? e11 : List == 'LIST 4' ? f11 : List == 'LIST 5' ? g11 : List == 'LIST 6' ? h11 : List == 'LIST 7' ? i11 : List == 'LIST 8' ? j11 : List == 'LIST 9' ? k11 : List == 'LIST 10' ? l11 : List =='LIST 11' ? m11 : List == 'LIST 12' ? n11 : List == 'LIST 13' ? o11 : List == 'LIST 14' ? p11 : List == 'LIST 15' ? r11 : List == 'MY LIST' ? List_11 : na
+a12 = List == 'LIST 1' ? c12 : List == 'LIST 2' ? d12 : List == 'LIST 3' ? e12 : List == 'LIST 4' ? f12 : List == 'LIST 5' ? g12 : List == 'LIST 6' ? h12 : List == 'LIST 7' ? i12 : List == 'LIST 8' ? j12 : List == 'LIST 9' ? k12 : List == 'LIST 10' ? l12 : List =='LIST 11' ? m12 : List == 'LIST 12' ? n12 : List == 'LIST 13' ? o12 : List == 'LIST 14' ? p12 : List == 'LIST 15' ? r12 : List == 'MY LIST' ? List_12 : na
+a13 = List == 'LIST 1' ? c13 : List == 'LIST 2' ? d13 : List == 'LIST 3' ? e13 : List == 'LIST 4' ? f13 : List == 'LIST 5' ? g13 : List == 'LIST 6' ? h13 : List == 'LIST 7' ? i13 : List == 'LIST 8' ? j13 : List == 'LIST 9' ? k13 : List == 'LIST 10' ? l13 : List =='LIST 11' ? m13 : List == 'LIST 12' ? n13 : List == 'LIST 13' ? o13 : List == 'LIST 14' ? p13 : List == 'LIST 15' ? r13 : List == 'MY LIST' ? List_13 : na
+a14 = List == 'LIST 1' ? c14 : List == 'LIST 2' ? d14 : List == 'LIST 3' ? e14 : List == 'LIST 4' ? f14 : List == 'LIST 5' ? g14 : List == 'LIST 6' ? h14 : List == 'LIST 7' ? i14 : List == 'LIST 8' ? j14 : List == 'LIST 9' ? k14 : List == 'LIST 10' ? l14 : List =='LIST 11' ? m14 : List == 'LIST 12' ? n14 : List == 'LIST 13' ? o14 : List == 'LIST 14' ? p14 : List == 'LIST 15' ? r14 : List == 'MY LIST' ? List_14 : na
+a15 = List == 'LIST 1' ? c15 : List == 'LIST 2' ? d15 : List == 'LIST 3' ? e15 : List == 'LIST 4' ? f15 : List == 'LIST 5' ? g15 : List == 'LIST 6' ? h15 : List == 'LIST 7' ? i15 : List == 'LIST 8' ? j15 : List == 'LIST 9' ? k15 : List == 'LIST 10' ? l15 : List =='LIST 11' ? m15 : List == 'LIST 12' ? n15 : List == 'LIST 13' ? o15 : List == 'LIST 14' ? p15 : List == 'LIST 15' ? r15 : List == 'MY LIST' ? List_15 : na
+a16 = List == 'LIST 1' ? c16 : List == 'LIST 2' ? d16 : List == 'LIST 3' ? e16 : List == 'LIST 4' ? f16 : List == 'LIST 5' ? g16 : List == 'LIST 6' ? h16 : List == 'LIST 7' ? i16 : List == 'LIST 8' ? j16 : List == 'LIST 9' ? k16 : List == 'LIST 10' ? l16 : List =='LIST 11' ? m16 : List == 'LIST 12' ? n16 : List == 'LIST 13' ? o16 : List == 'LIST 14' ? p16 : List == 'LIST 15' ? r16 : List == 'MY LIST' ? List_16 : na
+a17 = List == 'LIST 1' ? c17 : List == 'LIST 2' ? d17 : List == 'LIST 3' ? e17 : List == 'LIST 4' ? f17 : List == 'LIST 5' ? g17 : List == 'LIST 6' ? h17 : List == 'LIST 7' ? i17 : List == 'LIST 8' ? j17 : List == 'LIST 9' ? k17 : List == 'LIST 10' ? l17 : List =='LIST 11' ? m17 : List == 'LIST 12' ? n17 : List == 'LIST 13' ? o17 : List == 'LIST 14' ? p17 : List == 'LIST 15' ? r17 : List == 'MY LIST' ? List_17 : na
+a18 = List == 'LIST 1' ? c18 : List == 'LIST 2' ? d18 : List == 'LIST 3' ? e18 : List == 'LIST 4' ? f18 : List == 'LIST 5' ? g18 : List == 'LIST 6' ? h18 : List == 'LIST 7' ? i18 : List == 'LIST 8' ? j18 : List == 'LIST 9' ? k18 : List == 'LIST 10' ? l18 : List =='LIST 11' ? m18 : List == 'LIST 12' ? n18 : List == 'LIST 13' ? o18 : List == 'LIST 14' ? p18 : List == 'LIST 15' ? r18 : List == 'MY LIST' ? List_18 : na
+a19 = List == 'LIST 1' ? c19 : List == 'LIST 2' ? d19 : List == 'LIST 3' ? e19 : List == 'LIST 4' ? f19 : List == 'LIST 5' ? g19 : List == 'LIST 6' ? h19 : List == 'LIST 7' ? i19 : List == 'LIST 8' ? j19 : List == 'LIST 9' ? k19 : List == 'LIST 10' ? l19 : List =='LIST 11' ? m19 : List == 'LIST 12' ? n19 : List == 'LIST 13' ? o19 : List == 'LIST 14' ? p19 : List == 'LIST 15' ? r19 : List == 'MY LIST' ? List_19 : na
+a20 = List == 'LIST 1' ? c20 : List == 'LIST 2' ? d20 : List == 'LIST 3' ? e20 : List == 'LIST 4' ? f20 : List == 'LIST 5' ? g20 : List == 'LIST 6' ? h20 : List == 'LIST 7' ? i20 : List == 'LIST 8' ? j20 : List == 'LIST 9' ? k20 : List == 'LIST 10' ? l20 : List =='LIST 11' ? m20 : List == 'LIST 12' ? n20 : List == 'LIST 13' ? o20 : List == 'LIST 14' ? p20 : List == 'LIST 15' ? r20 : List == 'MY LIST' ? List_20 : na
+a21 = List == 'LIST 1' ? c21 : List == 'LIST 2' ? d21 : List == 'LIST 3' ? e21 : List == 'LIST 4' ? f21 : List == 'LIST 5' ? g21 : List == 'LIST 6' ? h21 : List == 'LIST 7' ? i21 : List == 'LIST 8' ? j21 : List == 'LIST 9' ? k21 : List == 'LIST 10' ? l21 : List =='LIST 11' ? m21 : List == 'LIST 12' ? n21 : List == 'LIST 13' ? o21 : List == 'LIST 14' ? p21 : List == 'LIST 15' ? r21 : List == 'MY LIST' ? List_21 : na
+a22 = List == 'LIST 1' ? c22 : List == 'LIST 2' ? d22 : List == 'LIST 3' ? e22 : List == 'LIST 4' ? f22 : List == 'LIST 5' ? g22 : List == 'LIST 6' ? h22 : List == 'LIST 7' ? i22 : List == 'LIST 8' ? j22 : List == 'LIST 9' ? k22 : List == 'LIST 10' ? l22 : List =='LIST 11' ? m22 : List == 'LIST 12' ? n22 : List == 'LIST 13' ? o22 : List == 'LIST 14' ? p22 : List == 'LIST 15' ? r22 : List == 'MY LIST' ? List_22 : na
+a23 = List == 'LIST 1' ? c23 : List == 'LIST 2' ? d23 : List == 'LIST 3' ? e23 : List == 'LIST 4' ? f23 : List == 'LIST 5' ? g23 : List == 'LIST 6' ? h23 : List == 'LIST 7' ? i23 : List == 'LIST 8' ? j23 : List == 'LIST 9' ? k23 : List == 'LIST 10' ? l23 : List =='LIST 11' ? m23 : List == 'LIST 12' ? n23 : List == 'LIST 13' ? o23 : List == 'LIST 14' ? p23 : List == 'LIST 15' ? r23 : List == 'MY LIST' ? List_23 : na
+a24 = List == 'LIST 1' ? c24 : List == 'LIST 2' ? d24 : List == 'LIST 3' ? e24 : List == 'LIST 4' ? f24 : List == 'LIST 5' ? g24 : List == 'LIST 6' ? h24 : List == 'LIST 7' ? i24 : List == 'LIST 8' ? j24 : List == 'LIST 9' ? k24 : List == 'LIST 10' ? l24 : List =='LIST 11' ? m24 : List == 'LIST 12' ? n24 : List == 'LIST 13' ? o24 : List == 'LIST 14' ? p24 : List == 'LIST 15' ? r24 : List == 'MY LIST' ? List_24 : na
+a25 = List == 'LIST 1' ? c25 : List == 'LIST 2' ? d25 : List == 'LIST 3' ? e25 : List == 'LIST 4' ? f25 : List == 'LIST 5' ? g25 : List == 'LIST 6' ? h25 : List == 'LIST 7' ? i25 : List == 'LIST 8' ? j25 : List == 'LIST 9' ? k25 : List == 'LIST 10' ? l25 : List =='LIST 11' ? m25 : List == 'LIST 12' ? n25 : List == 'LIST 13' ? o25 : List == 'LIST 14' ? p25 : List == 'LIST 15' ? r25 : List == 'MY LIST' ? List_25 : na
+a26 = List == 'LIST 1' ? c26 : List == 'LIST 2' ? d26 : List == 'LIST 3' ? e26 : List == 'LIST 4' ? f26 : List == 'LIST 5' ? g26 : List == 'LIST 6' ? h26 : List == 'LIST 7' ? i26 : List == 'LIST 8' ? j26 : List == 'LIST 9' ? k26 : List == 'LIST 10' ? l26 : List =='LIST 11' ? m26 : List == 'LIST 12' ? n26 : List == 'LIST 13' ? o26 : List == 'LIST 14' ? p26 : List == 'LIST 15' ? r26 : List == 'MY LIST' ? List_26 : na
+a27 = List == 'LIST 1' ? c27 : List == 'LIST 2' ? d27 : List == 'LIST 3' ? e27 : List == 'LIST 4' ? f27 : List == 'LIST 5' ? g27 : List == 'LIST 6' ? h27 : List == 'LIST 7' ? i27 : List == 'LIST 8' ? j27 : List == 'LIST 9' ? k27 : List == 'LIST 10' ? l27 : List =='LIST 11' ? m27 : List == 'LIST 12' ? n27 : List == 'LIST 13' ? o27 : List == 'LIST 14' ? p27 : List == 'LIST 15' ? r27 : List == 'MY LIST' ? List_27 : na
+a28 = List == 'LIST 1' ? c28 : List == 'LIST 2' ? d28 : List == 'LIST 3' ? e28 : List == 'LIST 4' ? f28 : List == 'LIST 5' ? g28 : List == 'LIST 6' ? h28 : List == 'LIST 7' ? i28 : List == 'LIST 8' ? j28 : List == 'LIST 9' ? k28 : List == 'LIST 10' ? l28 : List =='LIST 11' ? m28 : List == 'LIST 12' ? n28 : List == 'LIST 13' ? o28 : List == 'LIST 14' ? p28 : List == 'LIST 15' ? r28 : List == 'MY LIST' ? List_28 : na
+a29 = List == 'LIST 1' ? c29 : List == 'LIST 2' ? d29 : List == 'LIST 3' ? e29 : List == 'LIST 4' ? f29 : List == 'LIST 5' ? g29 : List == 'LIST 6' ? h29 : List == 'LIST 7' ? i29 : List == 'LIST 8' ? j29 : List == 'LIST 9' ? k29 : List == 'LIST 10' ? l29 : List =='LIST 11' ? m29 : List == 'LIST 12' ? n29 : List == 'LIST 13' ? o29 : List == 'LIST 14' ? p29 : List == 'LIST 15' ? r29 : List == 'MY LIST' ? List_29 : na
+a30 = List == 'LIST 1' ? c30 : List == 'LIST 2' ? d30 : List == 'LIST 3' ? e30 : List == 'LIST 4' ? f30 : List == 'LIST 5' ? g30 : List == 'LIST 6' ? h30 : List == 'LIST 7' ? i30 : List == 'LIST 8' ? j30 : List == 'LIST 9' ? k30 : List == 'LIST 10' ? l30 : List =='LIST 11' ? m30 : List == 'LIST 12' ? n30 : List == 'LIST 13' ? o30 : List == 'LIST 14' ? p30 : List == 'LIST 15' ? r30 : List == 'MY LIST' ? List_30 : na
+a31 = List == 'LIST 1' ? c31 : List == 'LIST 2' ? d31 : List == 'LIST 3' ? e31 : List == 'LIST 4' ? f31 : List == 'LIST 5' ? g31 : List == 'LIST 6' ? h31 : List == 'LIST 7' ? i31 : List == 'LIST 8' ? j31 : List == 'LIST 9' ? k31 : List == 'LIST 10' ? l31 : List =='LIST 11' ? m31 : List == 'LIST 12' ? n31 : List == 'LIST 13' ? o31 : List == 'LIST 14' ? p31 : List == 'LIST 15' ? r31 : List == 'MY LIST' ? List_31 : na
+a32 = List == 'LIST 1' ? c32 : List == 'LIST 2' ? d32 : List == 'LIST 3' ? e32 : List == 'LIST 4' ? f32 : List == 'LIST 5' ? g32 : List == 'LIST 6' ? h32 : List == 'LIST 7' ? i32 : List == 'LIST 8' ? j32 : List == 'LIST 9' ? k32 : List == 'LIST 10' ? l32 : List =='LIST 11' ? m32 : List == 'LIST 12' ? n32 : List == 'LIST 13' ? o32 : List == 'LIST 14' ? p32 : List == 'LIST 15' ? r32 : List == 'MY LIST' ? List_32 : na
+a33 = List == 'LIST 1' ? c33 : List == 'LIST 2' ? d33 : List == 'LIST 3' ? e33 : List == 'LIST 4' ? f33 : List == 'LIST 5' ? g33 : List == 'LIST 6' ? h33 : List == 'LIST 7' ? i33 : List == 'LIST 8' ? j33 : List == 'LIST 9' ? k33 : List == 'LIST 10' ? l33 : List =='LIST 11' ? m33 : List == 'LIST 12' ? n33 : List == 'LIST 13' ? o33 : List == 'LIST 14' ? p33 : List == 'LIST 15' ? r33 : List == 'MY LIST' ? List_33 : na
+a34 = List == 'LIST 1' ? c34 : List == 'LIST 2' ? d34 : List == 'LIST 3' ? e34 : List == 'LIST 4' ? f34 : List == 'LIST 5' ? g34 : List == 'LIST 6' ? h34 : List == 'LIST 7' ? i34 : List == 'LIST 8' ? j34 : List == 'LIST 9' ? k34 : List == 'LIST 10' ? l34 : List =='LIST 11' ? m34 : List == 'LIST 12' ? n34 : List == 'LIST 13' ? o34 : List == 'LIST 14' ? p34 : List == 'LIST 15' ? r34 : List == 'MY LIST' ? List_34 : na
+a35 = List == 'LIST 1' ? c35 : List == 'LIST 2' ? d35 : List == 'LIST 3' ? e35 : List == 'LIST 4' ? f35 : List == 'LIST 5' ? g35 : List == 'LIST 6' ? h35 : List == 'LIST 7' ? i35 : List == 'LIST 8' ? j35 : List == 'LIST 9' ? k35 : List == 'LIST 10' ? l35 : List =='LIST 11' ? m35 : List == 'LIST 12' ? n35 : List == 'LIST 13' ? o35 : List == 'LIST 14' ? p35 : List == 'LIST 15' ? r35 : List == 'MY LIST' ? List_35 : na
+a36 = List == 'LIST 1' ? c36 : List == 'LIST 2' ? d36 : List == 'LIST 3' ? e36 : List == 'LIST 4' ? f36 : List == 'LIST 5' ? g36 : List == 'LIST 6' ? h36 : List == 'LIST 7' ? i36 : List == 'LIST 8' ? j36 : List == 'LIST 9' ? k36 : List == 'LIST 10' ? l36 : List =='LIST 11' ? m36 : List == 'LIST 12' ? n36 : List == 'LIST 13' ? o36 : List == 'LIST 14' ? p36 : List == 'LIST 15' ? r36 : List == 'MY LIST' ? List_36 : na
+a37 = List == 'LIST 1' ? c37 : List == 'LIST 2' ? d37 : List == 'LIST 3' ? e37 : List == 'LIST 4' ? f37 : List == 'LIST 5' ? g37 : List == 'LIST 6' ? h37 : List == 'LIST 7' ? i37 : List == 'LIST 8' ? j37 : List == 'LIST 9' ? k37 : List == 'LIST 10' ? l37 : List =='LIST 11' ? m37 : List == 'LIST 12' ? n37 : List == 'LIST 13' ? o37 : List == 'LIST 14' ? p37 : List == 'LIST 15' ? r37 : List == 'MY LIST' ? List_37 : na
+a38 = List == 'LIST 1' ? c38 : List == 'LIST 2' ? d38 : List == 'LIST 3' ? e38 : List == 'LIST 4' ? f38 : List == 'LIST 5' ? g38 : List == 'LIST 6' ? h38 : List == 'LIST 7' ? i38 : List == 'LIST 8' ? j38 : List == 'LIST 9' ? k38 : List == 'LIST 10' ? l38 : List =='LIST 11' ? m38 : List == 'LIST 12' ? n38 : List == 'LIST 13' ? o38 : List == 'LIST 14' ? p38 : List == 'LIST 15' ? r38 : List == 'MY LIST' ? List_38 : na
+a39 = List == 'LIST 1' ? c39 : List == 'LIST 2' ? d39 : List == 'LIST 3' ? e39 : List == 'LIST 4' ? f39 : List == 'LIST 5' ? g39 : List == 'LIST 6' ? h39 : List == 'LIST 7' ? i39 : List == 'LIST 8' ? j39 : List == 'LIST 9' ? k39 : List == 'LIST 10' ? l39 : List =='LIST 11' ? m39 : List == 'LIST 12' ? n39 : List == 'LIST 13' ? o39 : List == 'LIST 14' ? p39 : List == 'LIST 15' ? r39 : List == 'MY LIST' ? List_39 : na
+a40 = List == 'LIST 1' ? c40 : List == 'LIST 2' ? d40 : List == 'LIST 3' ? e40 : List == 'LIST 4' ? f40 : List == 'LIST 5' ? g40 : List == 'LIST 6' ? h40 : List == 'LIST 7' ? i40 : List == 'LIST 8' ? j40 : List == 'LIST 9' ? k40 : List == 'LIST 10' ? l40 : List =='LIST 11' ? m40 : List == 'LIST 12' ? n40 : List == 'LIST 13' ? o40 : List == 'LIST 14' ? p40 : List == 'LIST 15' ? r40 : List == 'MY LIST' ? List_40 : na
+
+//######################## Label ###################################
+f_draw_label(_cond,_x,_y,_textline,_boxcolor,_txtcolor,_style,_txtalign)=>
+    var label Label = na
+    Label := _cond?label.new(_x,_y,_textline, color=_boxcolor, textcolor=_txtcolor,style=_style, yloc=yloc.price, xloc=xloc.bar_time, size=size.normal,textalign=_txtalign):na
+    label.delete(_cond?Label[1]:Label[0])
+
+format_text(str) =>
+    str + "\n"
+
+x= timenow + math.round(ta.change(time)*10*3)
+y = high + 0.1*high
+//######################## Label For Stock Screener ################
+
+s01  = st_sc==1 and request.security(a1,timeframe.period,condition,ignore_invalid_symbol = true)
+s02  = st_sc==1 and request.security(a2,timeframe.period,condition,ignore_invalid_symbol = true)
+s03  = st_sc==1 and request.security(a3,timeframe.period,condition,ignore_invalid_symbol = true)
+s04  = st_sc==1 and request.security(a4,timeframe.period,condition,ignore_invalid_symbol = true)
+s05  = st_sc==1 and request.security(a5,timeframe.period,condition,ignore_invalid_symbol = true)
+s06  = st_sc==1 and request.security(a6,timeframe.period,condition,ignore_invalid_symbol = true)
+s07  = st_sc==1 and request.security(a7,timeframe.period,condition,ignore_invalid_symbol = true)
+s08  = st_sc==1 and request.security(a8,timeframe.period,condition,ignore_invalid_symbol = true)
+s09  = st_sc==1 and request.security(a9,timeframe.period,condition,ignore_invalid_symbol = true)
+s10  = st_sc==1 and request.security(a10,timeframe.period,condition,ignore_invalid_symbol = true)
+s11  = st_sc==1 and request.security(a11,timeframe.period,condition,ignore_invalid_symbol = true)
+s12  = st_sc==1 and request.security(a12,timeframe.period,condition,ignore_invalid_symbol = true)
+s13  = st_sc==1 and request.security(a13,timeframe.period,condition,ignore_invalid_symbol = true)
+s14  = st_sc==1 and request.security(a14,timeframe.period,condition,ignore_invalid_symbol = true)
+s15  = st_sc==1 and request.security(a15,timeframe.period,condition,ignore_invalid_symbol = true)
+s16  = st_sc==1 and request.security(a16,timeframe.period,condition,ignore_invalid_symbol = true)
+s17  = st_sc==1 and request.security(a17,timeframe.period,condition,ignore_invalid_symbol = true)
+s18  = st_sc==1 and request.security(a18,timeframe.period,condition,ignore_invalid_symbol = true)
+s19  = st_sc==1 and request.security(a19,timeframe.period,condition,ignore_invalid_symbol = true)
+s20  = st_sc==1 and request.security(a20,timeframe.period,condition,ignore_invalid_symbol = true)
+s21  = st_sc==1 and request.security(a21,timeframe.period,condition,ignore_invalid_symbol = true)
+s22  = st_sc==1 and request.security(a22,timeframe.period,condition,ignore_invalid_symbol = true)
+s23  = st_sc==1 and request.security(a23,timeframe.period,condition,ignore_invalid_symbol = true)
+s24  = st_sc==1 and request.security(a24,timeframe.period,condition,ignore_invalid_symbol = true)
+s25  = st_sc==1 and request.security(a25,timeframe.period,condition,ignore_invalid_symbol = true)
+s26  = st_sc==1 and request.security(a26,timeframe.period,condition,ignore_invalid_symbol = true)
+s27  = st_sc==1 and request.security(a27,timeframe.period,condition,ignore_invalid_symbol = true)
+s28  = st_sc==1 and request.security(a28,timeframe.period,condition,ignore_invalid_symbol = true)
+s29  = st_sc==1 and request.security(a29,timeframe.period,condition,ignore_invalid_symbol = true)
+s30  = st_sc==1 and request.security(a30,timeframe.period,condition,ignore_invalid_symbol = true)
+s31  = st_sc==1 and request.security(a31,timeframe.period,condition,ignore_invalid_symbol = true)
+s32  = st_sc==1 and request.security(a32,timeframe.period,condition,ignore_invalid_symbol = true)
+s33  = st_sc==1 and request.security(a33,timeframe.period,condition,ignore_invalid_symbol = true)
+s34  = st_sc==1 and request.security(a34,timeframe.period,condition,ignore_invalid_symbol = true)
+s35  = st_sc==1 and request.security(a35,timeframe.period,condition,ignore_invalid_symbol = true)
+s36  = st_sc==1 and request.security(a36,timeframe.period,condition,ignore_invalid_symbol = true)
+s37  = st_sc==1 and request.security(a37,timeframe.period,condition,ignore_invalid_symbol = true)
+s38  = st_sc==1 and request.security(a38,timeframe.period,condition,ignore_invalid_symbol = true)
+s39  = st_sc==1 and request.security(a39,timeframe.period,condition,ignore_invalid_symbol = true)
+s40  = st_sc==1 and request.security(a40,timeframe.period,condition,ignore_invalid_symbol = true)
+
+st_txt_head = st_sc==1 ? format_text('---------------------------------\nSTOCK SCREENER RESULT\n---------------------------------'):na
+st_txt_list = st_sc==1 ? format_text('LIST GROUP : ' + List):na
+st_txt_info = st_sc==1 ? format_text('CONDITION : ' + look_for):na
+st_txt_symbols = st_sc==1 ? format_text('SYMBOLS : \n---------------------------------' ):na
+st_txt01 = st_sc==1 and s01 ? format_text(a1):na
+st_txt02 = st_sc==1 and s02 ? format_text(a2):na
+st_txt03 = st_sc==1 and s03 ? format_text(a3):na
+st_txt04 = st_sc==1 and s04 ? format_text(a4):na
+st_txt05 = st_sc==1 and s05 ? format_text(a5):na
+st_txt06 = st_sc==1 and s06 ? format_text(a6):na
+st_txt07 = st_sc==1 and s07 ? format_text(a7):na
+st_txt08 = st_sc==1 and s08 ? format_text(a8):na
+st_txt09 = st_sc==1 and s09 ? format_text(a9):na
+st_txt10 = st_sc==1 and s10 ? format_text(a10):na
+st_txt11 = st_sc==1 and s11 ? format_text(a11):na
+st_txt12 = st_sc==1 and s12 ? format_text(a12):na
+st_txt13 = st_sc==1 and s13 ? format_text(a13):na
+st_txt14 = st_sc==1 and s14 ? format_text(a14):na
+st_txt15 = st_sc==1 and s15 ? format_text(a15):na
+st_txt16 = st_sc==1 and s16 ? format_text(a16):na
+st_txt17 = st_sc==1 and s17 ? format_text(a17):na
+st_txt18 = st_sc==1 and s18 ? format_text(a18):na
+st_txt19 = st_sc==1 and s19 ? format_text(a19):na
+st_txt20 = st_sc==1 and s20 ? format_text(a20):na
+st_txt21 = st_sc==1 and s21 ? format_text(a21):na
+st_txt22 = st_sc==1 and s22 ? format_text(a22):na
+st_txt23 = st_sc==1 and s23 ? format_text(a23):na
+st_txt24 = st_sc==1 and s24 ? format_text(a24):na
+st_txt25 = st_sc==1 and s25 ? format_text(a25):na
+st_txt26 = st_sc==1 and s26 ? format_text(a26):na
+st_txt27 = st_sc==1 and s27 ? format_text(a27):na
+st_txt28 = st_sc==1 and s28 ? format_text(a28):na
+st_txt29 = st_sc==1 and s29 ? format_text(a29):na
+st_txt30 = st_sc==1 and s30 ? format_text(a30):na
+st_txt31 = st_sc==1 and s31 ? format_text(a31):na
+st_txt32 = st_sc==1 and s32 ? format_text(a32):na
+st_txt33 = st_sc==1 and s33 ? format_text(a33):na
+st_txt34 = st_sc==1 and s34 ? format_text(a34):na
+st_txt35 = st_sc==1 and s35 ? format_text(a35):na
+st_txt36 = st_sc==1 and s36 ? format_text(a36):na
+st_txt37 = st_sc==1 and s37 ? format_text(a37):na
+st_txt38 = st_sc==1 and s38 ? format_text(a38):na
+st_txt39 = st_sc==1 and s39 ? format_text(a39):na
+st_txt40 = st_sc==1 and s40 ? format_text(a40):na
+
+st_final_text1 =st_txt01 + st_txt02 + st_txt03 + st_txt04 + st_txt05 + st_txt06 + st_txt07 + st_txt08 + st_txt09 + st_txt10
+st_final_text2 =st_txt11 + st_txt12 + st_txt13 + st_txt14 + st_txt15 + st_txt16 + st_txt17 + st_txt18 + st_txt19 + st_txt20
+st_final_text3 =st_txt21 + st_txt22 + st_txt23 + st_txt24 + st_txt25 + st_txt26 + st_txt27 + st_txt28 + st_txt29 + st_txt30
+st_final_text4 =st_txt31 + st_txt32 + st_txt33 + st_txt34 + st_txt35 + st_txt36 + st_txt37 + st_txt38 + st_txt39 + st_txt40
+
+st_final_text = st_txt_head + st_txt_list + st_txt_info + st_txt_symbols + st_final_text1 + st_final_text2 + st_final_text3 + st_final_text4
+
+st_cond =st_sc==1?1:0
+
+lab_color=look_for=="BUY" and st_sc==true?color.green:look_for=="SELL" and st_sc==true?color.red:color.blue
+
+f_draw_label(st_cond,x,y,st_final_text,lab_color,color.white, _style = label.style_label_down, _txtalign = text.align_left)
+//######################## Alert ###################################
+alertcondition(buy, title="BUY SIGNAL!", message="BUY SIGNAL!")
+alertcondition(sell, title="SELL SIGNAL!", message="SELL SIGNAL!")
