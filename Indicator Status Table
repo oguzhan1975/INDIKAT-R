@@ -1,0 +1,55 @@
+//@version=5
+indicator("Indicator Status Table", overlay=false)
+
+// Indicators
+ema9 = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+ema55 = ta.ema(close, 55)
+ema100 = ta.ema(close, 100)
+ema200 = ta.ema(close, 200)
+price = close
+
+// RSI conditions
+rsi = ta.rsi(close, 14)
+
+// Conditions
+isAboveEMA9 = price > ema9
+isAboveEMA21 = price > ema21
+isAboveEMA55 = price > ema55
+isAboveEMA100 = price > ema100
+isAboveEMA200 = price > ema200
+isRSIAbove50 = rsi > 50
+
+// Create a table with 8 rows (1 for header and 7 for data rows)
+var table myTable = table.new(position.top_right, 3, 8, border_width=2)
+
+// Set table header with black background, white text, and black borders
+if (bar_index == 0)
+    table.cell(myTable, 0, 0, "Indicator Name", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+    table.cell(myTable, 1, 0, "Condition", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+    table.cell(myTable, 2, 0, "Status", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+
+// Populate table rows with orange background, white text, and black borders for each condition
+table.cell(myTable, 0, 1, "EMA 9", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 1, "Price > EMA 9", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 1, isAboveEMA9 ? "Green" : "Red", bgcolor=isAboveEMA9 ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 2, "EMA 21", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 2, "Price > EMA 21", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 2, isAboveEMA21 ? "Green" : "Red", bgcolor=isAboveEMA21 ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 3, "EMA 55", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 3, "Price > EMA 55", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 3, isAboveEMA55 ? "Green" : "Red", bgcolor=isAboveEMA55 ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 4, "EMA 100", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 4, "Price > EMA 100", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 4, isAboveEMA100 ? "Green" : "Red", bgcolor=isAboveEMA100 ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 5, "EMA 200", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 5, "Price > EMA 200", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 5, isAboveEMA200 ? "Green" : "Red", bgcolor=isAboveEMA200 ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 6, "RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 6, "RSI > 50", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 6, isRSIAbove50 ? "Green" : "Red", bgcolor=isRSIAbove50 ? color.green : color.red, text_color=color.white)
