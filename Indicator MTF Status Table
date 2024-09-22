@@ -1,0 +1,113 @@
+//@version=5
+indicator("Indicator MTF Status Table", overlay=true)
+
+// User-defined inputs for Stochastic RSI parameters
+rsi_length = input.int(14, title="RSI Length")
+stoch_length = input.int(14, title="Stoch Length")
+k_smoothing = input.int(3, title="K Smoothing")
+d_smoothing = input.int(3, title="D Smoothing")
+
+// User-defined inputs for Supertrend parameters
+atr_length = input.int(10, title="ATR Length")
+atr_multiplier = input.int(3, title="ATR Multiplier") // Changed to float for flexibility
+
+// Function to calculate Stochastic RSI
+f_stoch_rsi(src) =>
+    rsi = ta.rsi(src, rsi_length)
+    k = ta.sma(ta.stoch(rsi, rsi, rsi, stoch_length), k_smoothing)
+    d = ta.sma(k, d_smoothing)
+    [k, d]
+
+// Function to calculate Supertrend
+f_supertrend(src) =>
+    [supertrend, direction] = ta.supertrend(atr_length, atr_multiplier)
+    [supertrend, direction]
+
+// Stochastic RSI for different timeframes using security()
+[k_1h, d_1h] = request.security(syminfo.tickerid, "60", f_stoch_rsi(close))
+[k_4h, d_4h] = request.security(syminfo.tickerid, "240", f_stoch_rsi(close))
+[k_d, d_d] = request.security(syminfo.tickerid, "D", f_stoch_rsi(close))
+[k_w, d_w] = request.security(syminfo.tickerid, "W", f_stoch_rsi(close))
+[k_m, d_m] = request.security(syminfo.tickerid, "M", f_stoch_rsi(close))
+
+// Supertrend for different timeframes using security()
+[supertrend_1h, dir_1h] = request.security(syminfo.tickerid, "60", f_supertrend(close))
+[supertrend_4h, dir_4h] = request.security(syminfo.tickerid, "240", f_supertrend(close))
+[supertrend_d, dir_d] = request.security(syminfo.tickerid, "D", f_supertrend(close))
+[supertrend_w, dir_w] = request.security(syminfo.tickerid, "W", f_supertrend(close))
+[supertrend_m, dir_m] = request.security(syminfo.tickerid, "M", f_supertrend(close))
+
+// Conditions for Buy/Sell based on Stoch RSI and Supertrend
+isStochRSI_1hBuy = k_1h > d_1h
+isStochRSI_4hBuy = k_4h > d_4h
+isStochRSI_dBuy = k_d > d_d
+isStochRSI_wBuy = k_w > d_w
+isStochRSI_mBuy = k_m > d_m
+
+isSupertrend_1hBuy = dir_1h == 1
+isSupertrend_4hBuy = dir_4h == 1
+isSupertrend_dBuy = dir_d == 1
+isSupertrend_wBuy = dir_w == 1
+isSupertrend_mBuy = dir_m == 1
+
+// Create a table with 5 rows and 4 columns (Indicator Name, Timeframe, Condition, Status)
+var table myTable = table.new(position.top_right, 4, 11, border_width=2)
+
+// Set table header
+if (bar_index == 0)
+    table.cell(myTable, 0, 0, "Indicator Name", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+    table.cell(myTable, 1, 0, "Timeframe", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+    table.cell(myTable, 2, 0, "Condition", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+    table.cell(myTable, 3, 0, "Status", bgcolor=color.black, text_color=color.white, text_size=size.normal)
+
+// Populate table rows for Stoch RSI with Buy/Sell status
+table.cell(myTable, 0, 1, "Stoch RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 1, "1H", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 1, "K > D", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 1, isStochRSI_1hBuy ? "Buy" : "Sell", bgcolor=isStochRSI_1hBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 2, "Stoch RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 2, "4H", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 2, "K > D", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 2, isStochRSI_4hBuy ? "Buy" : "Sell", bgcolor=isStochRSI_4hBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 3, "Stoch RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 3, "Daily", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 3, "K > D", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 3, isStochRSI_dBuy ? "Buy" : "Sell", bgcolor=isStochRSI_dBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 4, "Stoch RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 4, "Weekly", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 4, "K > D", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 4, isStochRSI_wBuy ? "Buy" : "Sell", bgcolor=isStochRSI_wBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 5, "Stoch RSI", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 5, "Monthly", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 5, "K > D", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 5, isStochRSI_mBuy ? "Buy" : "Sell", bgcolor=isStochRSI_mBuy ? color.green : color.red, text_color=color.white)
+
+// Populate table rows for Supertrend with Buy/Sell status
+table.cell(myTable, 0, 6, "Supertrend", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 6, "1H", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 6, "Direction == 1", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 6, isSupertrend_1hBuy ? "Buy" : "Sell", bgcolor=isSupertrend_1hBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 7, "Supertrend", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 7, "4H", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 7, "Direction == 1", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 7, isSupertrend_4hBuy ? "Buy" : "Sell", bgcolor=isSupertrend_4hBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 8, "Supertrend", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 8, "Daily", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 8, "Direction == 1", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 8, isSupertrend_dBuy ? "Buy" : "Sell", bgcolor=isSupertrend_dBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 9, "Supertrend", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 9, "Weekly", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 9, "Direction == 1", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 9, isSupertrend_wBuy ? "Buy" : "Sell", bgcolor=isSupertrend_wBuy ? color.green : color.red, text_color=color.white)
+
+table.cell(myTable, 0, 10, "Supertrend", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 1, 10, "Monthly", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 2, 10, "Direction == 1", bgcolor=color.orange, text_color=color.white)
+table.cell(myTable, 3, 10, isSupertrend_mBuy ? "Buy" : "Sell", bgcolor=isSupertrend_mBuy ? color.green : color.red, text_color=color.white)
