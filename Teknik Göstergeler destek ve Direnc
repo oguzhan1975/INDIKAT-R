@@ -1,0 +1,861 @@
+//@version=5
+indicator("Teknik G", overlay=true)
+
+// Kullanıcı girişi
+useSMA = input.bool(true, title="SMA kullan")
+comparisonMethod = input.string("Fiyat Karşılaştırma", title="Değerlendirme Metodu", options=["Fiyat Karşılaştırma", "SMA Sıralama", "EMA Sıralama"])
+theme = input.string("Koyu Mod", title="Tema", options=["Koyu Mod", "Açık Mod"])
+customTextColor = input.color(color.white, title="Yazı Rengi")
+customBgColor = input.color(color.black, title="Arka Plan Rengi")
+customLineColor = input.color(color.gray, title="Çizgi Rengi")
+
+// Göstergeler ve Hesaplamalar
+
+// SMA ve EMA Hesaplaması
+sma = ta.sma(close, 20)
+ema = ta.ema(close, 20)
+sma5 = ta.sma(close, 5)
+sma20 = ta.sma(close, 20)
+sma50 = ta.sma(close, 50)
+sma100 = ta.sma(close, 100)
+sma200 = ta.sma(close, 200)
+ema5 = ta.ema(close, 5)
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+ema100 = ta.ema(close, 100)
+ema200 = ta.ema(close, 200)
+ma = useSMA ? sma : ema
+
+// RSI Hesaplaması
+rsiLengthInput = 14
+rsi = ta.rsi(close, rsiLengthInput)
+
+// MACD Hesaplaması
+fast_length = 12
+slow_length = 26
+signal_length = 9
+macdLine = ta.ema(close, fast_length) - ta.ema(close, slow_length)
+signalLine = ta.ema(macdLine, signal_length)
+
+// ATR Hesaplaması
+atrLength = 14
+atr_general = ta.atr(atrLength)
+atr_avg = ta.sma(atr_general, atrLength)
+atr_threshold = 1.1 * atr_avg  // ATR ortalamasının %10 üzerinde
+
+// Bollinger Bands Hesaplaması
+bbLength = 20
+bbMult = 2.0
+basis = ta.sma(close, bbLength)
+dev = bbMult * ta.stdev(close, bbLength)
+upperBB = basis + dev
+lowerBB = basis - dev
+
+// OBV Hesaplaması
+obv = ta.cum(math.sign(ta.change(close)) * volume)
+obvSma = ta.sma(obv, 20)
+
+// CCI Hesaplaması
+cciLength = 20
+cciSrc = hlc3
+cciMa = ta.sma(cciSrc, cciLength)
+cci = (cciSrc - cciMa) / (0.015 * ta.dev(cciSrc, cciLength))
+
+// Göreceli Hacim Hesaplaması
+relVolPeriod = input.int(20, title="Göreceli Hacim Periyodu")
+relVol = volume / ta.sma(volume, relVolPeriod)
+
+// MFI Hesaplaması
+mfiLength = 14
+mfiSrc = hlc3
+mfi = ta.mfi(mfiSrc, mfiLength)
+
+// ADX ve DI Hesaplaması
+len = 14
+TrueRange = math.max(math.max(high - low, math.abs(high - nz(close[1]))), math.abs(low - nz(close[1])))
+DirectionalMovementPlus = high - nz(high[1]) > nz(low[1]) - low ? math.max(high - nz(high[1]), 0) : 0
+DirectionalMovementMinus = nz(low[1]) - low > high - nz(high[1]) ? math.max(nz(low[1]) - low, 0) : 0
+SmoothedTrueRange = ta.rma(TrueRange, len)
+SmoothedDirectionalMovementPlus = ta.rma(DirectionalMovementPlus, len)
+SmoothedDirectionalMovementMinus = ta.rma(DirectionalMovementMinus, len)
+DIPlus = 100 * SmoothedDirectionalMovementPlus / SmoothedTrueRange
+DIMinus = 100 * SmoothedDirectionalMovementMinus / SmoothedTrueRange
+DX = 100 * math.abs(DIPlus - DIMinus) / (DIPlus + DIMinus)
+adxValue = ta.sma(DX, len)
+
+// Parabolic SAR Hesaplaması
+sarStart = 0.02
+sarIncrement = 0.02
+sarMax = 0.2
+psar = ta.sar(sarStart, sarIncrement, sarMax)
+
+// Supertrend Hesaplaması (v4 koduna göre)
+supertrendSrc = hl2
+supertrendAtrLength = 10
+supertrendAtrMultiplier = 3.0
+atr_supertrend = ta.sma(ta.tr(true), supertrendAtrLength)
+supertrendAtr = ta.atr(supertrendAtrLength)
+up = supertrendSrc - (supertrendAtrMultiplier * supertrendAtr)
+up1 = nz(up[1], up)
+up := close[1] > up1 ? math.max(up, up1) : up
+dn = supertrendSrc + (supertrendAtrMultiplier * supertrendAtr)
+dn1 = nz(dn[1], dn)
+dn := close[1] < dn1 ? math.min(dn, dn1) : dn
+trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > dn1 ? 1 : trend == 1 and close < up1 ? -1 : trend
+supertrendDirection = trend == 1 ? 1 : -1
+
+// Puanlama
+maScore = comparisonMethod == "Fiyat Karşılaştırma" ? (close > ma ? 10 : 0) : 
+          (comparisonMethod == "EMA Sıralama" ? ((ema5 > ema20 and ema20 > ema50 and ema50 > ema100 and ema100 > ema200) ? 10 : 0) :
+           ((sma5 > sma20 and sma20 > sma50 and sma50 > sma100 and sma100 > sma200) ? 10 : 0))
+rsiScore = rsi > 50 ? 10 : 0
+macdScore = macdLine > signalLine ? 10 : 0
+atrScore = atr_general > atr_threshold ? 5 : 0  // Güncellenmiş ATR değerlendirme (5 puan)
+supertrendScore = supertrendDirection == 1 ? 5 : 0  // Supertrend değerlendirmesi (5 puan)
+bbScore = close > basis ? 10 : 0
+obvScore = obv > obvSma ? 10 : 0  // OBV değerlendirmesi güncellendi
+cciScore = cci > -100 ? 5 : 0  // CCI değerlendirmesi
+relVolScore = relVol > 1 ? 10 : 0 // Göreceli Hacim değerlendirmesi
+mfiScore = mfi > 50 ? 5 : 0  // MFI değerlendirmesi
+adxScore = (adxValue > 20 and DIPlus > DIMinus) ? 10 : 0 // ADX ve DI+ değerlendirmesi
+psarScore = close > psar ? 10 : 0 // PSAR değerlendirmesi: Fiyat PSAR'ın üstündeyse 10 puan, altındaysa 0 puan
+
+// Toplam Puan
+totalScore = maScore + rsiScore + macdScore + atrScore + bbScore + obvScore + cciScore + relVolScore + mfiScore + adxScore + psarScore + supertrendScore
+
+// Tema ayarları
+bgColor = theme == "Koyu Mod" ? color.new(color.black, 0) : color.new(color.white, 0)
+textColor = theme == "Koyu Mod" ? color.white : color.black
+
+// Puan ve Göstergelere Göre İyi/Kötü Durum Tablosu
+var table = table.new(position.top_right, 4, 14, border_width = 1, border_color = customLineColor, frame_color = customLineColor, frame_width = 1)
+
+if (bar_index == last_bar_index) // Sadece son çubukta göster
+    table.cell(table_id=table, row=0, column=0, text="Gösterge(Kriter)", text_color=customTextColor, bgcolor=customBgColor)
+    table.cell(table_id=table, row=0, column=1, text="Durum", text_color=customTextColor, bgcolor=customBgColor)
+    table.cell(table_id=table, row=0, column=2, text="Puan", text_color=customTextColor, bgcolor=customBgColor)
+    
+    // Teknik Gösterge Değerlendirici
+    table.cell(table_id=table, row=1, column=0, text="Supertrend (Yön)", text_color=customTextColor)
+    table.cell(table_id=table, row=1, column=1, text=supertrendScore > 0 ? "İyi" : "Kötü", text_color=supertrendScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=1, column=2, text=str.tostring(supertrendScore), text_color=supertrendScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=2, column=0, text="MACD(Çizgi)", text_color=customTextColor)
+    table.cell(table_id=table, row=2, column=1, text=macdScore > 0 ? "İyi" : "Kötü", text_color=macdScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=2, column=2, text=str.tostring(macdScore), text_color=macdScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=3, column=0, text="RSI (50 üstü)", text_color=customTextColor)
+    table.cell(table_id=table, row=3, column=1, text=rsiScore > 0 ? "İyi" : "Kötü", text_color=rsiScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=3, column=2, text=str.tostring(rsiScore), text_color=rsiScore > 0 ? color.green : color.red)
+    
+    if comparisonMethod == "SMA Sıralama"
+        table.cell(table_id=table, row=4, column=0, text="SMA (Sıralama)", text_color=customTextColor)
+    else if comparisonMethod == "EMA Sıralama"
+        table.cell(table_id=table, row=4, column=0, text="EMA (Sıralama)", text_color=customTextColor)
+    else
+        table.cell(table_id=table, row=4, column=0, text=useSMA ? "SMA(Fiyat üstü)" : "EMA (Fiyat üstü)", text_color=customTextColor)
+    table.cell(table_id=table, row=4, column=1, text=maScore > 0 ? "İyi" : "Kötü", text_color=maScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=4, column=2, text=str.tostring(maScore), text_color=maScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=5, column=0, text="ATR(14gün)", text_color=customTextColor)
+    table.cell(table_id=table, row=5, column=1, text=atrScore > 0 ? "İyi" : "Kötü", text_color=atrScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=5, column=2, text=str.tostring(atrScore), text_color=atrScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=6, column=0, text="Bollinger(Orta bant)", text_color=customTextColor)
+    table.cell(table_id=table, row=6, column=1, text=bbScore > 0 ? "İyi" : "Kötü", text_color=bbScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=6, column=2, text=str.tostring(bbScore), text_color=bbScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=7, column=0, text="ADX(20 üstü,DI+>DI-)", text_color=customTextColor)
+    table.cell(table_id=table, row=7, column=1, text=adxScore > 0 ? "İyi" : "Kötü", text_color=adxScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=7, column=2, text=str.tostring(adxScore), text_color=adxScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=8, column=0, text="PSAR(Fiyat altı)", text_color=customTextColor)
+    table.cell(table_id=table, row=8, column=1, text=psarScore > 0 ? "İyi" : "Kötü", text_color=psarScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=8, column=2, text=str.tostring(psarScore), text_color=psarScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=9, column=0, text="OBV(20 gün SMA üstü)", text_color=customTextColor)
+    table.cell(table_id=table, row=9, column=1, text=obvScore > 0 ? "İyi" : "Kötü", text_color=obvScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=9, column=2, text=str.tostring(obvScore), text_color=obvScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=10, column=0, text="CCI(-100 üstü)", text_color=customTextColor)
+    table.cell(table_id=table, row=10, column=1, text=cciScore > 0 ? "İyi" : "Kötü", text_color=cciScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=10, column=2, text=str.tostring(cciScore), text_color=cciScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=11, column=0, text="Göreceli Hacim(RelVol)", text_color=customTextColor)
+    table.cell(table_id=table, row=11, column=1, text=relVolScore > 0 ? "İyi" : "Kötü", text_color=relVolScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=11, column=2, text=str.tostring(relVolScore), text_color=relVolScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=12, column=0, text="MFI(50 üstü)", text_color=customTextColor)
+    table.cell(table_id=table, row=12, column=1, text=mfiScore > 0 ? "İyi" : "Kötü", text_color=mfiScore > 0 ? color.green : color.red)
+    table.cell(table_id=table, row=12, column=2, text=str.tostring(mfiScore), text_color=mfiScore > 0 ? color.green : color.red)
+    
+    table.cell(table_id=table, row=13, column=0, text="Toplam", text_color=customTextColor, bgcolor=customBgColor)
+    table.cell(table_id=table, row=13, column=2, text=str.tostring(totalScore) + "/100", text_color=customTextColor, bgcolor=customBgColor)
+///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+//@version=5
+//indicator("Support and Resistance (High Volume Boxes) [ChartPrime]", shorttitle = "SR Breaks and Retests [ChartPrime]", overlay=true, max_boxes_count = 50)
+
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙑𝙄𝙎𝙐𝘼𝙇𝙄𝙕𝘼𝙏𝙄𝙊𝙉
+// 𝙆𝙐𝙇𝙇𝘼𝙉𝙄𝘾𝙄 𝙂𝙄𝙍𝙄𝙎𝙇𝙀𝙍𝙄
+// ---------------------------------------------------------------------------------------------------------------------{
+int   lookbackPeriod = input.int(20, "Geriye Bakış Periyodu", minval=1, group = "Ayarlar")
+int   vol_len        = input.int(2, "Hacim Filtresi Uzunluğu", tooltip = "Daha yüksek değerler düşük hacimli kutuları filtreler"
+                                                                                                   , group = "Ayarlar")
+float box_withd      = input.float(1, "Kutunun Genişliğini Ayarla", maxval = 1000, minval = 0, step = 0.1)
+
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙂𝙊𝙎𝙏𝙀𝙍𝙂𝙀 𝙃𝙄𝙎𝘼𝙋𝙇𝘼𝙈𝘼𝙇𝘼𝙍𝙄
+// ---------------------------------------------------------------------------------------------------------------------{
+// Delta Hacim Fonksiyonu
+upAndDownVolume() =>
+    posVol = 0.0
+    negVol = 0.0
+    
+    var isBuyVolume = true    
+
+    switch
+        close > open   => isBuyVolume := true
+        close < open   => isBuyVolume := false
+
+    if isBuyVolume
+        posVol += volume
+    else
+        negVol -= volume
+
+    posVol + negVol
+
+
+// Destek ve Direnç Kutularını Belirleme Fonksiyonu
+calcSupportResistance(src, lookbackPeriod) =>
+    // Hacim
+    Vol    = upAndDownVolume()
+    vol_hi = ta.highest(Vol/2.5, vol_len)
+    vol_lo = ta.lowest(Vol/2.5, vol_len)
+
+    var float supportLevel      = na
+    var float supportLevel_1    = na    
+    var float resistanceLevel   = na
+    var float resistanceLevel_1 = na    
+    var box   sup               = na
+    var box   res               = na
+    var color res_color         = na
+    var color sup_color         = na    
+    var float multi             = na
+
+    var bool  brekout_res       = na
+    var bool  brekout_sup       = na
+    var bool  res_holds         = na
+    var bool  sup_holds         = na
+
+    // Pivot noktalarını bul
+    pivotHigh = ta.pivothigh(src, lookbackPeriod, lookbackPeriod)
+    pivotLow  = ta.pivotlow (src, lookbackPeriod, lookbackPeriod)
+    // Kutunun genişliği
+    atr       = ta.atr(200)
+    withd     = atr * box_withd
+
+    // Pozitif Hacim ile Destek Seviyeleri Bul
+    if (not na(pivotLow)) and Vol > vol_hi 
+
+        supportLevel   := pivotLow
+        supportLevel_1 := supportLevel-withd       
+
+        topLeft         = chart.point.from_index(bar_index-lookbackPeriod, supportLevel)
+        bottomRight     = chart.point.from_index(bar_index, supportLevel_1)
+
+        sup_color      := color.from_gradient(Vol, 0, ta.highest(Vol, 25), color(na), color.new(color.green, 30))
+
+        sup := box.new(
+                       top_left     = topLeft, 
+                       bottom_right = bottomRight, 
+                       border_color = color.green, 
+                       border_width = 1, 
+                       bgcolor      = sup_color, 
+                       text         = "Hacim: "+str.tostring(math.round(Vol,2)), 
+                       text_color   = chart.fg_color, 
+                       text_size    = size.small
+                       ) 
+
+
+    // Negatif Hacim ile Direnç Seviyeleri Bul
+    if (not na(pivotHigh)) and Vol < vol_lo
+        resistanceLevel   := pivotHigh
+        resistanceLevel_1 := resistanceLevel+withd
+
+        topLeft            = chart.point.from_index(bar_index-lookbackPeriod, resistanceLevel)
+        bottomRight        = chart.point.from_index(bar_index, resistanceLevel_1)
+
+        res_color         := color.from_gradient(Vol, ta.lowest(Vol, 25), 0, color.new(color.red, 30), color(na))
+
+        res := box.new(
+                       top_left     = topLeft, 
+                       bottom_right = bottomRight, 
+                       border_color = color.red, 
+                       border_width = 1, 
+                       bgcolor      = res_color, 
+                       text         = "Hacim: "+str.tostring(math.round(Vol,2)), 
+                       text_color   = chart.fg_color, 
+                       text_size    = size.small
+                       ) 
+
+    // Uyarlanabilir Kutu Uzunluğu
+    sup.set_right(bar_index+1)
+    res.set_right(bar_index+1)
+
+    // Destek veya Direnç Kırılma Koşulları
+    brekout_res := ta.crossover(low, resistanceLevel_1)
+    res_holds   := ta.crossunder(high, resistanceLevel)
+
+    sup_holds   := ta.crossover(low, supportLevel)
+    brekout_sup := ta.crossunder(high, supportLevel_1)
+
+    // Destek kırıldıysa rengini kırmızı yap, direnç kırıldıysa rengini yeşile çevir
+    if brekout_sup
+        sup.set_bgcolor(color.new(color.red, 80))
+        sup.set_border_color(color.red)
+        sup.set_border_style(line.style_dashed)
+
+    if sup_holds
+        sup.set_bgcolor(sup_color)
+        sup.set_border_color(color.green)
+        sup.set_border_style(line.style_solid)
+
+    if brekout_res
+        res.set_bgcolor(color.new(color.green, 80))
+        res.set_border_color(color.new(color.green, 0))
+        res.set_border_style(line.style_dashed)
+
+    if res_holds
+        res.set_bgcolor(res_color)
+        res.set_border_color(color.new(color.red, 0))
+        res.set_border_style(line.style_solid)
+
+    [supportLevel, resistanceLevel, brekout_res, res_holds, sup_holds, brekout_sup]
+
+
+// Destek ve direnç seviyelerini ve kırılmalarını hesaplayın
+[supportLevel,
+         resistanceLevel, 
+             brekout_res, 
+                 res_holds, 
+                     sup_holds, 
+                         brekout_sup] = calcSupportResistance(close, lookbackPeriod)
+
+
+// Direnç Destek mi Oldu veya Destek Direnç mi Oldu?
+var bool res_is_sup = na
+var bool sup_is_res = na
+
+switch
+    brekout_res => res_is_sup := true
+    res_holds   => res_is_sup := false
+
+switch
+    brekout_sup => sup_is_res := true
+    sup_holds   => sup_is_res := false
+
+
+// ---------------------------------------------------------------------------------------------------------------------}
+// ---------------------------------------------------------------------------------------------------------------------}
+// 𝙄𝙉𝘿𝙄𝙆𝘼𝙏Ö𝙍 𝙃𝙀𝙎𝘼𝙋𝙇𝘼𝙈𝘼𝙇𝘼𝙍𝙄
+// ---------------------------------------------------------------------------------------------------------------------{
+// Direnç ve Destek kırılma durumlarını ve tutma durumlarını ekrana yansıt
+plotchar(res_holds, "Direnç Tutuyor", "◆", 
+             color = #e92929, size = size.tiny, location = location.abovebar, offset = -1)
+plotchar(sup_holds, "Destek Tutuyor", "◆", 
+             color = #20ca26, size = size.tiny, location = location.belowbar, offset = -1)
+
+plotchar(brekout_res and res_is_sup[1], "Direnç Destek Olarak Tutuyor", "◆", 
+             color = #20ca26, size = size.tiny, location = location.belowbar, offset = -1)
+plotchar(brekout_sup and sup_is_res[1], "Destek Direnç Olarak Tutuyor", "◆", 
+             color = #e92929, size = size.tiny, location = location.abovebar, offset = -1)
+
+// Kırılma Etiketleri
+if brekout_sup and not sup_is_res[1]
+    label.new(
+              bar_index[1], supportLevel[1], 
+              text       = "Destek Kırıldı", 
+              style      = label.style_label_down, 
+              color      = #7e1e1e, 
+              textcolor  = chart.fg_color, 
+              size       = size.small
+              )
+
+if brekout_res and not res_is_sup[1]
+    label.new(
+              bar_index[1], resistanceLevel[1], 
+              text       = "Direnç Kırıldı", 
+              style      = label.style_label_up, 
+              color      = #2b6d2d, 
+              textcolor  = chart.fg_color, 
+              size       = size.small
+              )
+
+// ◆
+// ---------------------------------------------------------------------------------------------------------------------}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//@version=5
+//indicator('Murrey Math Line X by leo', shorttitle='MML by leo', max_bars_back=500, overlay=true)
+
+
+// Function outputs 1 when it's the first bar of the D/W/M/Y
+is_newbar(res) =>
+    ch = 0
+    if res == 'Y'
+        t = year(time('D'))
+        ch := ta.change(t) != 0 ? 1 : 0
+        ch
+    else
+        t = time(res)
+        ch := ta.change(t) != 0 ? 1 : 0
+        ch
+    ch
+
+// Rounding levels to min tick
+nround(x) =>
+    n = math.round(x / syminfo.mintick) * syminfo.mintick
+    n
+//-- get inputs
+frame = input.int(defval=64, title='Frame Size', minval=8, maxval=256)
+mult = input.float(defval=1.5, title='Frame Multiplier', minval=1.0, maxval=2.0, step=0.5)
+wicks = input(defval=true, title='Ignore Wicks?')
+show_historical_levels = input(title='Show Historical Levels?', defval=false)
+extendOption = input.string(title='Line Extension', options=['none', 'left', 'right', 'both'], defval='none')
+lineExtend = extendOption == 'left' ? extend.left : extendOption == 'right' ? extend.right : extendOption == 'both' ? extend.both : extend.none
+show_level_value = input(title='Show Levels Value?', defval=true)
+show_current_levels = input(title='Show Current Levels', defval=false)
+//-- defines
+logTen = math.log(10)
+log8 = math.log(8)
+log2 = math.log(2)
+lookback = math.round(frame * mult)
+
+//-- determine price values based on ignore wick selection
+uPrice = wicks == true ? math.max(open, close) : high
+lPrice = wicks == true ? math.min(open, close) : low
+
+//-- find highest/lowest price over specified lookback
+vLow = ta.lowest(lPrice, lookback)
+vHigh = ta.highest(uPrice, lookback)
+vDist = vHigh - vLow
+//-- if low price is < 0 then adjust accordingly
+tmpHigh = vLow < 0 ? 0 - vLow : vHigh
+tmpLow = vLow < 0 ? 0 - vLow - vDist : vLow
+
+//-- determine if price shift is in place
+shift = vLow < 0 ? true : false
+
+//-- calculate scale frame
+sfVar = math.log(0.4 * tmpHigh) / logTen - math.floor(math.log(0.4 * tmpHigh) / logTen)
+SR = tmpHigh > 25 ? sfVar > 0 ? math.exp(logTen * (math.floor(math.log(0.4 * tmpHigh) / logTen) + 1)) : math.exp(logTen * math.floor(math.log(0.4 * tmpHigh) / logTen)) : 100 * math.exp(log8 * math.floor(math.log(0.005 * tmpHigh) / log8))
+nVar1 = math.log(SR / (tmpHigh - tmpLow)) / log8
+nVar2 = nVar1 - math.floor(nVar1)
+N = nVar1 <= 0 ? 0 : nVar2 == 0 ? math.floor(nVar1) : math.floor(nVar1) + 1
+
+//-- calculate scale interval and temporary frame top and bottom
+SI = SR * math.exp(-N * log8)
+M = math.floor(1.0 / log2 * math.log((tmpHigh - tmpLow) / SI) + 0.0000001)
+I = math.round((tmpHigh + tmpLow) * 0.5 / (SI * math.exp((M - 1) * log2)))
+
+Bot = (I - 1) * SI * math.exp((M - 1) * log2)
+Top = (I + 1) * SI * math.exp((M - 1) * log2)
+
+//-- determine if frame shift is required
+doShift = tmpHigh - Top > 0.25 * (Top - Bot) or Bot - tmpLow > 0.25 * (Top - Bot)
+
+ER = doShift == true ? 1 : 0
+
+MM = ER == 0 ? M : ER == 1 and M < 2 ? M + 1 : 0
+NN = ER == 0 ? N : ER == 1 and M < 2 ? N : N - 1
+
+//-- recalculate scale interval and top and bottom of frame, if necessary
+finalSI = ER == 1 ? SR * math.exp(-NN * log8) : SI
+finalI = ER == 1 ? math.round((tmpHigh + tmpLow) * 0.5 / (finalSI * math.exp((MM - 1) * log2))) : I
+finalBot = ER == 1 ? (finalI - 1) * finalSI * math.exp((MM - 1) * log2) : Bot
+finalTop = ER == 1 ? (finalI + 1) * finalSI * math.exp((MM - 1) * log2) : Top
+
+//-- determine the increment
+Increment = (finalTop - finalBot) / 8
+
+//-- determine the absolute top
+absTop = shift == true ? -(finalBot - 3 * Increment) : finalTop + 3 * Increment
+
+//-- create our Murrey line variables based on absolute top and the increment
+Plus38 = absTop
+Plus28 = absTop - Increment
+Plus18 = absTop - 2 * Increment
+EightEight = absTop - 3 * Increment
+SevenEight = absTop - 4 * Increment
+SixEight = absTop - 5 * Increment
+FiveEight = absTop - 6 * Increment
+FourEight = absTop - 7 * Increment
+ThreeEight = absTop - 8 * Increment
+TwoEight = absTop - 9 * Increment
+OneEight = absTop - 10 * Increment
+ZeroEight = absTop - 11 * Increment
+Minus18 = absTop - 12 * Increment
+Minus28 = absTop - 13 * Increment
+Minus38 = absTop - 14 * Increment
+
+bars_sinse = 0
+bars_sinse := is_newbar('D') ? 0 : bars_sinse[1] + 1
+//-- plot the lines and we are done
+vsm1_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus38, bar_index, Plus38, color=color.white, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm1_p, extend=lineExtend)
+vsm2_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus28, bar_index, Plus28, color=color.red, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm2_p, extend=lineExtend)
+vsm3_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus18, bar_index, Plus18, color=color.red, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm3_p, extend=lineExtend)
+vsm4_p = line.new(bar_index[math.min(bars_sinse, 300)], EightEight, bar_index, EightEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm4_p, extend=lineExtend)
+vsm5_p = line.new(bar_index[math.min(bars_sinse, 300)], SevenEight, bar_index, SevenEight, color=color.orange, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm5_p, extend=lineExtend)
+vsm6_p = line.new(bar_index[math.min(bars_sinse, 300)], SixEight, bar_index, SixEight, color=color.fuchsia, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm6_p, extend=lineExtend)
+vsm7_p = line.new(bar_index[math.min(bars_sinse, 300)], FiveEight, bar_index, FiveEight, color=color.green, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm7_p, extend=lineExtend)
+vsm8_p = line.new(bar_index[math.min(bars_sinse, 300)], FourEight, bar_index, FourEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm8_p, extend=lineExtend)
+vsm9_p = line.new(bar_index[math.min(bars_sinse, 300)], ThreeEight, bar_index, ThreeEight, color=color.green, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm9_p, extend=lineExtend)
+vsm10_p = line.new(bar_index[math.min(bars_sinse, 300)], TwoEight, bar_index, TwoEight, color=color.fuchsia, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm10_p, extend=lineExtend)
+vsm11_p = line.new(bar_index[math.min(bars_sinse, 300)], OneEight, bar_index, OneEight, color=color.orange, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm11_p, extend=lineExtend)
+vsm12_p = line.new(bar_index[math.min(bars_sinse, 300)], ZeroEight, bar_index, ZeroEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm12_p, extend=lineExtend)
+vsm13_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus18, bar_index, Minus18, color=color.green, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm13_p, extend=lineExtend)
+vsm14_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus28, bar_index, Minus28, color=color.green, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm14_p, extend=lineExtend)
+vsm15_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus38, bar_index, Minus38, color=color.white, style=line.style_dotted, extend=extend.none, width=2, force_overlay=true)
+line.set_extend(id=vsm15_p, extend=lineExtend)
+
+//Delete
+
+if not is_newbar('D') or not show_historical_levels
+    //line.delete(vpp_p[1])
+    line.delete(vsm1_p[1])
+    line.delete(vsm2_p[1])
+    line.delete(vsm3_p[1])
+    line.delete(vsm4_p[1])
+    line.delete(vsm5_p[1])
+    line.delete(vsm6_p[1])
+    line.delete(vsm7_p[1])
+    line.delete(vsm8_p[1])
+    line.delete(vsm9_p[1])
+    line.delete(vsm10_p[1])
+    line.delete(vsm11_p[1])
+    line.delete(vsm12_p[1])
+    line.delete(vsm13_p[1])
+    line.delete(vsm14_p[1])
+    line.delete(vsm15_p[1])
+
+// Labelling
+label_vsm1 = label.new(bar_index, Plus38, text=show_level_value ? '                                                        +3/8 Yakın Ayı dönüşü -- ' + ' ' + str.tostring(nround(Plus38)) : '+3/8 Yakın Ayı dönüşü -- ', style=label.style_none, textcolor=color.white, force_overlay=true)
+label_vsm2 = label.new(bar_index, Plus28, text=show_level_value ? '                                                        +2/8 Aşırı Sapma -- ' + ' ' + str.tostring(nround(Plus28)) : '+2/8 Aşırı Sapma -- ', style=label.style_none, textcolor=color.red, force_overlay=true)
+label_vsm3 = label.new(bar_index, Plus18, text=show_level_value ? '                                                        +1/8 Sapma -- ' + ' ' + str.tostring(nround(Plus18)) : '+1/8 Sapma -- ', style=label.style_none, textcolor=color.red, force_overlay=true)
+label_vsm4 = label.new(bar_index, EightEight, text=show_level_value ? '                                                        8/8 Nihai Direnç -- ' + ' ' + str.tostring(nround(EightEight)) : '8/8 Nihai Direnç -- ', style=label.style_none, textcolor=color.aqua, force_overlay=true)
+label_vsm5 = label.new(bar_index, SevenEight, text=show_level_value ? '                                                        7/8 Zayıf, Durdur & Tersine Çevir -- ' + ' ' + str.tostring(nround(SevenEight)) : '7/8 Zayıf, Durdur & Tersine Çevir -- ', style=label.style_none, textcolor=color.orange, force_overlay=true)
+label_vsm6 = label.new(bar_index, SixEight, text=show_level_value ? '                                                        6/8 Güçlü Pivot Dönüş -- ' + ' ' + str.tostring(nround(SixEight)) : '6/8 Güçlü Pivot Dönüş -- ', style=label.style_none, textcolor=color.fuchsia, force_overlay=true)
+label_vsm7 = label.new(bar_index, FiveEight, text=show_level_value ? '                                                        5/8 Ticaret Aralığının Zirvesi -- ' + ' ' + str.tostring(nround(FiveEight)) : '5/8 Ticaret Aralığının Zirvesi -- ', style=label.style_none, textcolor=color.green, force_overlay=true)
+label_vsm8 = label.new(bar_index, FourEight, text=show_level_value ? '                                                        4/8 Ana S/R Pivot Noktası -- ' + ' ' + str.tostring(nround(FourEight)) : '4/8 Ana S/R Pivot Noktası -- ', style=label.style_none, textcolor=color.aqua, force_overlay=true)
+label_vsm9 = label.new(bar_index, ThreeEight, text=show_level_value ? '                                                        3/8 Ticaret Aralığının Dibi -- ' + ' ' + str.tostring(nround(ThreeEight)) : '3/8 Ticaret Aralığının Dibi -- ', style=label.style_none, textcolor=color.green, force_overlay=true)
+label_vsm10 = label.new(bar_index, TwoEight, text=show_level_value ? '                                                        2/8 Güçlü Pivot Dönüş -- ' + ' ' + str.tostring(nround(TwoEight)) : '2/8 Güçlü Pivot Dönüş -- ', style=label.style_none, textcolor=color.fuchsia, force_overlay=true)
+label_vsm11 = label.new(bar_index, OneEight, text=show_level_value ? '                                                        1/8 Zayıf, Durdur & Tersine Çevir -- ' + ' ' + str.tostring(nround(OneEight)) : '1/8 Zayıf, Durdur & Tersine Çevir -- ', style=label.style_none, textcolor=color.orange, force_overlay=true)
+label_vsm12 = label.new(bar_index, ZeroEight, text=show_level_value ? '                                                        0/8 Nihai Destek -- ' + ' ' + str.tostring(nround(ZeroEight)) : '0/8 Nihai Destek -- ', style=label.style_none, textcolor=color.aqua, force_overlay=true)
+label_vsm13 = label.new(bar_index, Minus18, text=show_level_value ? '                                                        -1/8 Aşırı Satım -- ' + ' ' + str.tostring(nround(Minus18)) : '-1/8 Aşırı Satım -- ', style=label.style_none, textcolor=color.green, force_overlay=true)
+label_vsm14 = label.new(bar_index, Minus28, text=show_level_value ? '                                                        -2/8 Aşırı Aşım -- ' + ' ' + str.tostring(nround(Minus28)) : '-2/8 Aşırı Aşım -- ', style=label.style_none, textcolor=color.green, force_overlay=true)
+label_vsm15 = label.new(bar_index, Minus38, text=show_level_value ? '                                                        -3/8 Yakın Boğa dönüşü -- ' + ' ' + str.tostring(nround(Minus38)) : '-3/8 Yakın Boğa dönüşü -- ', style=label.style_none, textcolor=color.white, force_overlay=true)
+
+if not is_newbar('D') or not show_historical_levels
+    label.delete(label_vsm1[1])
+    label.delete(label_vsm2[1])
+    label.delete(label_vsm3[1])
+    label.delete(label_vsm4[1])
+    label.delete(label_vsm5[1])
+    label.delete(label_vsm6[1])
+    label.delete(label_vsm7[1])
+    label.delete(label_vsm8[1])
+    label.delete(label_vsm9[1])
+    label.delete(label_vsm10[1])
+    label.delete(label_vsm11[1])
+    label.delete(label_vsm12[1])
+    label.delete(label_vsm13[1])
+    label.delete(label_vsm14[1])
+    label.delete(label_vsm15[1])
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+//@version=5
+//indicator("nht Trend Lines 2.0", shorttitle="TL2", overlay=true, max_bars_back=300)
+
+srch = input.source(high, "Yüksekler Kaynağı")
+srcl = input.source(low, "Düşükler Kaynağı")
+mx = input.int(300, "Maksimum Aralık", minval=2, maxval=300)
+nr = input.int(0, "Gürültü Azaltma", minval=0)
+sm = nr + 1
+sr = input.bool(true, "Direnç Göster (Kırmızı)")
+ss = input.bool(true, "Destek Göster (Yeşil)")
+sa = input.bool(true, "Ortalama Göster (Sarı)")
+rl = input.bool(true, "Referans Çizgileri Göster")
+cr = input.bool(true, "Çapraz Göster")
+tl = input.bool(false, "İz Çizgileri Göster")
+exp = input.bool(true, "Logaritmik Ayarla")
+
+SRCH = ta.ema(srch, sm)
+SRCL = ta.ema(srcl, sm)
+
+gap = 2
+if mx > bar_index - gap
+    mx := bar_index - gap
+
+hhh = 0.0
+lll = 1000000000000.0
+
+h2 = hhh
+th2 = 0
+l2 = lll
+tl2 = 0
+h1 = hhh
+th1 = 0
+l1 = lll
+tl1 = 0
+
+for i = (mx + gap) to gap by 1
+    h1 := math.max(h1, SRCH[i])
+    if h1 == SRCH[i]
+        th1 := i
+    l1 := math.min(l1, SRCL[i])
+    if l1 == SRCL[i]
+        tl1 := i
+
+for i = (mx + gap) to gap by 1
+    if i < math.min(tl1, th1) / 2 
+        h2 := math.max(h2, SRCH[i])
+        if h2 == SRCH[i]
+            th2 := i
+    if i < math.min(th1, tl1) / 2
+        l2 := math.min(l2, SRCL[i])
+        if l2 == SRCL[i]
+            tl2 := i
+
+if th1 <= gap
+    h1 := hhh
+    th1 := 0
+    for i = (mx + gap) to (math.round(mx / 1.4669) + gap) by 1
+        h1 := math.max(h1, SRCH[i])
+        if h1 == SRCH[i]
+            th1 := i
+
+if tl1 <= gap
+    l1 := lll
+    tl1 := 0
+    for i = (mx + gap) to (math.round(mx / 1.4669) + gap) by 1
+        l1 := math.min(l1, SRCL[i])
+        if l1 == SRCL[i]
+            tl1 := i
+
+if th2 <= gap
+    h2 := hhh
+    th2 := 0
+    for i = gap to (math.round(mx / 2.9338) + gap) by 1
+        h2 := math.max(h2, SRCH[i])
+        if h2 == SRCH[i]
+            th2 := i
+
+if tl2 <= gap
+    l2 := lll
+    tl2 := 0
+    for i = gap to (math.round(mx / 2.9338) + gap) by 1
+        l2 := math.min(l2, SRCL[i])
+        if l2 == SRCL[i]
+            tl2 := i
+    
+a1 = math.avg(h1, l1)
+ta1 = math.round(math.avg(th1, tl1))
+a2 = math.avg(h2, l2)
+ta2 = math.round(math.avg(th2, tl2))
+
+PLT(P1, P2, T1, T2) =>
+    if exp
+        t = T1 - T2
+        slope = (math.log10(P1) - math.log10(P2)) / (0 - t)
+        y = slope * T1 + math.log10(P1)
+        math.pow(10, y)
+    else
+        ((P2 - P1) / (T1 - T2)) * T1 + P1
+
+PLC = (bar_index == (na(bar_index[1]) ? bar_index : bar_index[1]) or tl)
+
+PLTh = PLC ? PLT(h1, h2, th1, th2) : na
+PLTl = PLC ? PLT(l1, l2, tl1, tl2) : na
+PLTa = PLC ? PLT(a1, a2, ta1, ta2) : na
+
+sty = tl ? plot.style_stepline : plot.style_circles
+lin = tl ? 1 : 2 
+
+plot(sr and not na(PLTh) ? PLTh : na, title="Direnç", color=color.new(color.red, 0), style=sty, linewidth=lin)
+plot(sa and not na(PLTa) ? PLTa : na, title="Ortalama", color=color.new(color.yellow, 0), style=sty, linewidth=lin)
+plot(ss and not na(PLTl) ? PLTl : na, title="Destek", color=color.new(color.green, 0), style=sty, linewidth=lin)
+
+bgcolor(close > PLTh ? color.new(color.red, 95) : na, title="Close over Resistance")
+bgcolor(close < PLTl ? color.new(color.green, 95) : na, title="Close under Support")
+
+L(T1, H1, T2, H2, CLR, W, X) =>
+    line.new(bar_index - math.max(T1, 0), H1, bar_index - math.max(T2, 0), H2, color=CLR, width=W, extend=X ? extend.both : extend.none)
+
+if sr
+    var L1b = line(na)
+    L1b.delete()
+    L1b := L(th1, h1, th2, h2, #e92020, 1, true)
+    if rl
+        var L1a = line(na)
+        L1a.delete()
+        L1a := L(th1, h1, th2, h2, color.new(color.red, 0), 3, false)
+if ss
+    var L2b = line(na)
+    L2b.delete()
+    L2b := L(tl1, l1, tl2, l2, #28ca2e, 1, true)
+    if rl
+        var L2a = line(na)
+        L2a.delete()
+        L2a := L(tl1, l1, tl2, l2, color.new(color.green, 0), 3, false)
+if sa
+    var L3b = line(na)
+    L3b.delete()
+    L3b := L(ta1, a1, ta2, a2, #9053e6, 1, true)
+    if rl
+        var L3a = line(na)
+        L3a.delete()
+        L3a := L(ta1, a1, ta2, a2, #9053e6, 3, false)
+if cr    
+    var L4b = line(na)
+    L4b.delete()
+    L4b := L(th1, h1, tl2, l2, color.new(color.gray, 0), 2, false)
+    var L5b = line(na)
+    L5b.delete()
+    L5b := L(tl1, l1, th2, h2, color.new(color.gray, 0), 2, false)
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+length = input(title='', defval=17)
+src = input(title='Source', defval=close)
+highlight = input(title='Highlight ?', defval=true)
+emafilter = input(title='Ema Filter', defval=true)
+alpha = 2 * math.abs(ta.rsi(src, length) / 100 - 0.5)
+arsima = 0.0
+arsima := ta.ema(alpha * src + (1 - alpha) * nz(arsima[1]),5)
+arsimaColor = highlight ? arsima > arsima[1] ? color.green : color.red : #6d1e7f
+plot(arsima, title='ARSIMA', linewidth=3, color=arsimaColor, transp=0, force_overlay=true)
+emalong = emafilter == false ? true : ta.ema(close,34) < close ? true : false
+signalcookies = table.new('bottom' + '_' + 'right', 1, 3)
+emashort = emafilter == false ? true : ta.ema(close,34) > close ? true : false
+signalcondition = arsima > arsima[1] ? '0' : '1'
+y11 = low - (ta.atr(30) * 0.5)
+y22 = high + (ta.atr(30) * 0.5)
+buycondition = signalcondition == '0' and arsima[1] < arsima[2] and emalong
+sellcondition = signalcondition == '1' and arsima[1] > arsima[2] and emashort
+buysince = ta.barssince(buycondition)
+sellsince = ta.barssince(sellcondition)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Functions
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+max_labels_count = 500
+max_boxes_count = 500
+max_lines_count = 500
+
+//Range Size Function
+rng_size(x, qty, n) =>
+//    AC       = Cond_EMA(abs(x - x[1]), 1, n)
+    wper = n * 2 - 1
+    avrng = ta.ema(math.abs(x - x[1]), n)
+    AC = ta.ema(avrng, wper) * qty
+    rng_size = AC
+    rng_size
+
+//Range Filter Function
+rng_filt(x, rng_, n) =>
+    r = rng_
+    var rfilt = array.new_float(2, x)
+    array.set(rfilt, 1, array.get(rfilt, 0))
+    if x - r > array.get(rfilt, 1)
+        array.set(rfilt, 0, x - r)
+    if x + r < array.get(rfilt, 1)
+        array.set(rfilt, 0, x + r)
+    rng_filt1 = array.get(rfilt, 0)
+
+    hi_band = rng_filt1 + r
+    lo_band = rng_filt1 - r
+    rng_filt = rng_filt1
+    [hi_band, lo_band, rng_filt]
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Inputs
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//Range Source
+rng_src = input(defval=close, title='Swing Source')
+
+//Range Period
+rng_per = input.int(defval=200, minval=1, title='Swing Period')
+
+//Range Size Inputs
+rng_qty = input.float(defval=7.5, minval=0.0000001, title='Swing Multiplier')
+
+//Bar Colors
+use_barcolor = input(defval=true, title='Bar Colors On/Off')
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Definitions
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Range Filter Values
+[h_band, l_band, filt] = rng_filt(rng_src, rng_size(rng_src, rng_qty, rng_per), rng_per)
+
+//Direction Conditions
+var fdir = 0.0
+fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
+upward = fdir == 1 ? 1 : 0
+downward = fdir == -1 ? 1 : 0
+
+//Trading Condition
+longCond = rng_src > filt and rng_src > rng_src[1] and upward > 0 or rng_src > filt and rng_src < rng_src[1] and upward > 0
+shortCond = rng_src < filt and rng_src < rng_src[1] and downward > 0 or rng_src < filt and rng_src > rng_src[1] and downward > 0
+
+CondIni = 0
+CondIni := longCond ? 1 : shortCond ? -1 : CondIni[1]
+longCondition = longCond and CondIni[1] == -1
+shortCondition = shortCond and CondIni[1] == 1
+
+//Colors
+filt_color = upward ? #2adf06e5 : downward ? #ec0606e0 : #cccccc
+bar_color = upward and rng_src > filt ? rng_src > rng_src[1] ? #76ff05 : #76ff05 : downward and rng_src < filt ? rng_src < rng_src[1] ? #ff0505 : #ff0505 : #109404
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Outputs
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+//Filter Plot
+filt_plot = plot(filt, color=filt_color, linewidth=3, title='Filter', transp=67)
+
+//Band Plots
+h_band_plot = plot(h_band, color=color.new(#05ff9b, 100), title='High Band')
+l_band_plot = plot(l_band, color=color.new(#ff0583, 100), title='Low Band')
+
+//Band Fills
+fill(h_band_plot, filt_plot, color=#00b36b00, title='High Band Fill')
+fill(l_band_plot, filt_plot, color=#b8005c00, title='Low Band Fill')
+
+//Bar Color
+barcolor(use_barcolor ? bar_color : na)
