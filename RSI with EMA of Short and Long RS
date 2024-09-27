@@ -1,0 +1,32 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rayhankar
+
+//@version=5
+indicator("RSI with EMA of Short and Long RSI ", overlay=false)
+
+// Inputs for RSI and EMA settings
+rsilenght = input(14, title="RSI Lenght")
+shortEMALenght = input(9, title="Short EMA Lenght")
+longEMALenght = input(21, title="Long EMA Lenght")
+
+// Calculate the basic RSI
+rsi = ta.rsi(close, rsilenght)
+
+
+
+// Calculate EMA of RSI for both short and long periods
+shortEMA_RSI = ta.ema(rsi, shortEMALenght)
+longEMA_RSI = ta.ema(rsi, longEMALenght)
+
+
+plot(rsi, color=color.blue, linewidth=2, title="RSI")
+
+plot(shortEMA_RSI, color=color.green, linewidth=2, title="Short EMA of RSI")
+plot(longEMA_RSI, color=color.red, linewidth=2, title="Long EMA of RSI")
+
+
+
+// Plot horizontal lines for common RSI levels
+hline(70, "Overbought", color=color.red)
+hline(30, "Oversold", color=color.green)
+hline(50, "Midline", color=color.gray)
