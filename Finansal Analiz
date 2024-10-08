@@ -1,0 +1,159 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © zdmre
+
+//@version=5
+indicator('Financials Info by zdmre', overlay = true, format=format.volume)
+
+period = input.string('FY', 'Period', options=['FQ', 'FY'], tooltip='FQ: Financial Quarter\nFY: Financial Year')
+opt_textsize = input.string(size.small, 'Text Size', options=[size.auto, size.tiny, size.small, size.normal, size.large, size.huge], group='table')
+opt_textcolor = input(color.white, "Text Color", tooltip='Title')
+opt_datatextcolor = input(color.black, "Text Color", tooltip='Data')
+opt_panelbgcolor = input(color.gray, "Background Color", tooltip='Panel')
+is_opt_pos = input.string(position.top_right, 'Table \nPosition\n #1', options= [position.top_left, position.top_center, position.top_right, position.middle_left, position.middle_center, position.middle_right, position.bottom_left, position.bottom_center, position.bottom_right], group='table')
+is_info = input(true, "Show DURUM Column")
+
+//Filtering
+colorGroup = 'Filtering Data by Color'
+opval = input.float(10, title = 'Operating Margin %', group=colorGroup, tooltip='Operating Margin value & EPS Estimated - Income Statement - Table 1.\n\nIIf Opmar > value, cell to green; else cell to red\ndefval=10')
+epsval = input.float(0, title = 'EPS', group=colorGroup, tooltip='Earning per Share value & EPS Estimated - Income Statement - Table 1.\n\nIIf EPS > value, cell to green; else cell to red\ndefval=0')
+peval = input.float(15, title = 'P/E', group=colorGroup, tooltip='Price to Earnings Ratio value (FY) - Income Statement - Table 1.\n\nIIf 0 < P/E < value, cell to green; else cell to red \ndefval=15')
+deval = input.float(0.5, title = 'D/E', group=colorGroup, tooltip='Debt/Equity Ratio value - Balance Sheet - Table 2.\n\nIIf D/E < value, cell to green; else cell to red \ndefval=0.5')
+pbval = input.float(3, title = 'P/B', group=colorGroup, tooltip='Price to Book Value - Balance Sheet -Table 2.\n\nIIf 0 < P/B < value, cell to green; else cell to red \ndefval=3 ')
+roeval = input.float(10, title = 'ROE', group=colorGroup, tooltip='Return on Equity value - Statistics - Table 3.\n\nIIf ROE > value, cell to green; else cell to red \ndefval=10 ')
+roepbval = input.float(3, title = 'ROE/PB', group=colorGroup, tooltip='Return on Equity / Price to Book Ratio - Balance Sheet -Table 2.\n\nIIf ROE/PB > value, cell to green; else cell to red \ndefval=3 ')
+roaval = input.float(5, title = 'ROA', group=colorGroup, tooltip='Return on Asset value - Statistics - Table 3.\n\nIIf ROA > value, cell to green; else cell to red \ndefval=5')
+roicval = input.float(7, title = 'ROIC', group=colorGroup, tooltip='Return on Investment Capital value - Statistics - Table 3.\n\nIIf ROIC > value, cell to green; else cell to red \ndefval=7')
+dyieldval = input.float(2, title = 'Dividend Yield', group=colorGroup, tooltip='Dividend Yield - Statistics - Table 4.\n\nIf Dividend Yield < value, cell to red; else cell to green\ndefval=2')
+dpayoutval = input.float(70, title = 'Dividend Payout', group=colorGroup, tooltip='Dividend Payout - Statistics - Table 4.\n\nIf Dividend Payout < value, cell to red; else cell to green\ndefval=70')
+
+// Financial Data
+opmar = request.financial(syminfo.tickerid, 'OPERATING_MARGIN', period)
+eps = request.financial(syminfo.tickerid, "EARNINGS_PER_SHARE_BASIC", period)
+pear = close/request.financial(syminfo.tickerid,'EARNINGS_PER_SHARE_BASIC', "TTM")
+epsest = request.financial(syminfo.tickerid,'EARNINGS_ESTIMATE', period)
+pb = close / request.financial(syminfo.tickerid,'BOOK_VALUE_PER_SHARE', period)  // bs05
+de = request.financial(syminfo.tickerid,'DEBT_TO_EQUITY', period)
+roe = request.financial(syminfo.tickerid,'RETURN_ON_EQUITY', period)
+roepb = request.financial(syminfo.tickerid,'RETURN_ON_EQUITY_ADJUST_TO_BOOK', period)
+roa = request.financial(syminfo.tickerid,'RETURN_ON_ASSETS', period)
+qr = request.financial(syminfo.tickerid,'QUICK_RATIO', period)
+roic = request.financial(syminfo.tickerid,'RETURN_ON_INVESTED_CAPITAL', period)
+dpayout = request.financial(syminfo.tickerid,'DIVIDEND_PAYOUT_RATIO', period)
+dyield = request.financial(syminfo.tickerid,'DIVIDENDS_YIELD', period)
+fscore = request.financial(syminfo.tickerid,'PIOTROSKI_F_SCORE',period)
+
+// Specials
+specrate = 0.8 // Special Calc Rate
+discount = 0.09 // Discount Rate
+n_year = 5 // Discount Year
+
+DPS = request.financial(syminfo.tickerid, "DPS_COMMON_STOCK_PRIM_ISSUE", "FY")
+BVPS = request.financial(syminfo.tickerid, "BOOK_VALUE_PER_SHARE", "FY")
+EPS = request.financial(syminfo.tickerid, 'EARNINGS_PER_SHARE', 'FY')
+PE = close/request.financial(syminfo.tickerid, 'EARNINGS_PER_SHARE', 'TTM')
+AVG_PE = request.security(syminfo.tickerid, '3M', ta.sma(PE, 4))
+SGR = request.financial(syminfo.tickerid, 'SUSTAINABLE_GROWTH_RATE', "FY")
+M0 = request.security("USM0", "M", close)
+M2 = request.security("USM2", "M", close)
+
+//Calculations
+rate = 1 + (math.abs(SGR) / 100)
+eps_mult = EPS * specrate
+MS = (M2/M0)*1
+
+value_in_n_years = eps_mult * math.pow(specrate, n_year) * AVG_PE
+valueh = value_in_n_years / math.pow(1 + discount, n_year)
+iv = valueh < 0 ? (math.abs(value_in_n_years) + valueh) * MS : valueh * MS
+bdip = iv[1] / rate
+ivrate = close/iv[1] -1
+ivDURUM = close < bdip ? "Çok Düşük Değerli" : close < iv[1] ? "Düşük Değerli" : iv[1] < close and iv[1]*1.5 > close ? "Nötr" : iv[1]*1.5 < close and iv[1]*2 > close ? "Yüksek Değerli" : "Çok Yüksek Değerli"
+
+// Table
+var tbis = table.new(is_opt_pos, 3, 21, frame_color=color.black, frame_width=0, border_width=0, border_color=color.black)
+if barstate.islast
+// Title
+    table.cell(tbis, 0, 0, 'FINANSAL ANALİZ', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 1, 0, '', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 1, 'Faaliyet\nKarı %', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 2, 'Hisse başı kazanç', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 3, 'Beklenen H başı Kazanç', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 4, 'Hisse başı kar oranı', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 5, '', bgcolor = color.new(color.black,100))
+    table.cell(tbis, 0, 6, 'BİLANÇO', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 1, 6, '', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 7, 'Fiyat/Defter D.', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 8, 'T.borç/T.Özkaynak', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 9, '', bgcolor = color.new(color.black,100))
+    table.cell(tbis, 0, 10, 'İSTATİSTİKLER', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 1, 10, '', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 11, 'Özkaynak karlılığı', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 12, 'Özkaynak karl*dd/pd', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 13, 'Aktif Karlılık', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 14, 'Sermaye getirisi', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 15, 'Temettü verimi', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 16, 'Temettü ödeme oranı', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 17, 'F-Score', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 18, 'Özsermaye ile büyüme kapasitesi', bgcolor = opt_panelbgcolor, text_size=opt_textsize, text_color=opt_textcolor)
+    table.cell(tbis, 0, 19, '', bgcolor = color.new(color.black,100))
+    table.cell(tbis, 0, 20, 'Hisse gerçek değeri', bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor)
+// Data
+    table.cell(tbis, 1, 1, str.tostring(opmar, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=opmar <= opval  or opmar < 0 ?  #FF6961 : color.lime) // Operating Margin
+    table.cell(tbis, 1, 2, str.tostring(eps, '#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=eps <= epsval  or eps < 0 ?  #FF6961 : color.lime) // EPS
+    table.cell(tbis, 1, 3, str.tostring(epsest, '#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=epsest <= epsval or epsest < 0 ?  #FF6961 : epsest >= 0 ? color.lime : color.white) // EPS
+    table.cell(tbis, 1, 4, str.tostring(pear, '#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=math.abs(pear) >= peval ?  #FF6961 : color.lime) // P/E
+    table.cell(tbis, 1, 7, str.tostring(pb, '#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=pb >= pbval or pb < 0 ?  #FF6961 : color.lime) // P/B
+    table.cell(tbis, 1, 8, str.tostring(de, '#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=de >= deval or de < 0 ?  #FF6961 : color.lime) // D/E
+    table.cell(tbis, 1, 11, str.tostring(roe, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=roe <= roeval ?  #FF6961 : color.lime) // ROE
+    table.cell(tbis, 1, 12, str.tostring(roepb, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=roe <= roepbval ?  #FF6961 : color.lime) // ROEPB
+    table.cell(tbis, 1, 13, str.tostring(roa, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=roa <= roaval ?  #FF6961 : color.lime) // ROA
+    table.cell(tbis, 1, 14, str.tostring(roic, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=roic <= roicval ?  #FF6961 : color.lime) // ROIC
+    table.cell(tbis, 1, 15, str.tostring(dyield, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=dyield == 0 ? color.white : dyield <= dyieldval ?  #FF6961 : color.lime) // DYield
+    table.cell(tbis, 1, 16, str.tostring(dpayout, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor=dpayout == 0 ? color.white : dpayout >= dpayoutval ?  #FF6961 : color.lime) // DPayout
+    table.cell(tbis, 1, 17, str.tostring(fscore, '#,##0'), text_size=opt_textsize, text_color=color.black, bgcolor=fscore <= 0 ? #c0392b : fscore <= 1 ? #ec7063 : fscore <= 2  ? #e67e22  : fscore <= 3  ?  #fad7a0 : fscore <= 4  ?  #85c1e9  : fscore <= 5  ? #a9cce3  : fscore <= 6  ? #a9dfbf  : fscore <= 7  ? #7dcea0  : fscore <= 8  ?  #52be80 : color.lime) // DPayout
+    table.cell(tbis, 1, 18, str.tostring(SGR, '#,##0.00')+'%', text_size=opt_textsize, text_color=color.black, bgcolor= SGR > 30 ?  #52be80 : SGR > 10 ? color.orange : color.lime) // SGR
+    table.cell(tbis, 1, 19, '', bgcolor = color.new(color.black,100))
+    table.cell(tbis, 1, 20, str.tostring(iv[1],'#,##0.00'), text_size=opt_textsize, text_color=color.black, bgcolor=ivrate >= 0.3 ? #FF6961 : color.lime ) // PB
+      
+    if is_info
+        c1 = #009d0c 
+        c2 = color.lime
+        c3 = color.gray
+        c4 = #f9aeae 
+        c5 = #f60000
+        c6 = color.white
+        opcolor = opmar >= 30 ? c1 : opmar >= 10 ? c2 : opmar > 0 ? c3 : c4
+        epscolor = eps >= 10 ? c1 : eps >= 3 ? c2 : eps >= 3 ? c3 : eps >= -1 ? c4  :  c5 
+        epsestcolor = epsest >= 10 ? c1 : epsest >= 3 ? c2 : epsest >= 0 ? c3 : epsest >= -1 ? c4 : epsest < -1 ? c5 : c6
+        pearcolor = math.abs(pear) <= 5 ? c1 : math.abs(pear) <= 10 ? c2: math.abs(pear) <= 15 ? c3 : math.abs(pear) <= 25 ? c4 :c5 
+        pbcolor = math.abs(pb) <= 2 ? c1 : math.abs(pb) <= 3 ? c2 : math.abs(pb) <= 7 ? c3 : math.abs(pb) <= 10 ? c4 :c5    
+        decolor = math.abs(de) <= 0.1 ? c1  : math.abs(de) <= 0.5 ? c2 : math.abs(de) <= 1 ? c3 : math.abs(de) <= 2 ? c4 :c5 
+        roecolor = roe >= 30 ? c1 : roe >= 15 ? c2 : roe >= 0 ? c3 : roe >= -3 ? c4 :c5 
+        roepbcolor = roepb >= 15 ? c1 : roepb >= 5 ? c2 : roepb >= 0 ? c3 : roepb >= -10 ? c4 :c5
+        roacolor = roa >= 20 ? c1 : roa >= 10 ? c2 : roa >= 0 ? c3 : roa >= -7  ? c4 :c5
+        roiccolor = roic >= 25 ? c1 : roic >= 12 ? c2 : roic >= 0 ? c3 : roic >= - 5 ? c4 :c5
+        dyieldcolor = dyield == 0 ? c6 : dyield >= 0.5 ? c4 : dyield >= 2 ? c3 : dyield >= 4 ? c2 : dyield >= 8  ? c1 : c5
+        dpayoutcolor = dpayout <= 10 and dpayout > 0 ? c1 : dpayout > 10 and dpayout <= 30 ? c2 : dpayout > 30 and  dpayout <= 50 ?  c3 : dpayout > 50 and dpayout <= 70 ? c4 : dpayout == 0 ? c6 : c5
+        fscorecolor = fscore <= 0 ? #c0392b : fscore <= 1 ? #ec7063 : fscore <= 2  ? #e67e22  : fscore <= 3  ?  #fad7a0 : fscore <= 4  ?  #85c1e9  : fscore <= 5  ? #a9cce3  : fscore <= 6  ? #a9dfbf  : fscore <= 7  ? #7dcea0  : fscore <= 8  ?  #52be80 : color.lime
+        sgrcolor = SGR >= 70 ? c1 : SGR >= 40 ? c2 : SGR >= 25 ? c3 : SGR >= 5  ? c4 :c5
+        ivcolor = close < bdip ? c1 : close < iv[1] ? c2 : iv[1] < close and iv[1] < close and iv[1]*1.5 > close ? c3 :  iv[1]*1.5 < close and iv[1]*2  > close ? c4 : c5
+        
+        table.cell(tbis, 2, 0, str.tostring("DURUM"), bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor) //
+        table.cell(tbis, 2, 6, str.tostring("DURUM"), bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor) //   
+        table.cell(tbis, 2, 10, str.tostring("DURUM"), bgcolor = color.blue, text_size=opt_textsize, text_color=opt_textcolor) //   
+        table.cell(tbis, 2, 1, str.tostring(opmar >= 30 ? "Çok güçlü" : opmar >= 10 ? "Güçlü" : opmar >= 0 ? "Normal" : "Zayıf"), text_size=opt_textsize, text_color=color.black, bgcolor=opcolor)
+        table.cell(tbis, 2, 2, str.tostring(eps >= 10 ? "Çok güçlü" : eps >= 3 ? "Güçlü" : eps >= 0 ? "Normal" : eps >= -1 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=epscolor) //   
+        table.cell(tbis, 2, 3, str.tostring(epsest >= 10 ? "Çok güçlü" : epsest >= 3 ? "Güçlü" : epsest >= 0 ? "Normal" : epsest >= -1 ? "Zayıf" : epsest < -1 ? "Çok kötü" : "None"), text_size=opt_textsize, text_color=color.black, bgcolor=epsestcolor) //  
+        table.cell(tbis, 2, 4, str.tostring(math.abs(pear) <= 5 ? "Değerinin altında" : math.abs(pear) <= 10 ? "Değerinin altında" : math.abs(pear) <= 15 ? "Normal" : math.abs(pear) <= 25 ? "Aşırı değerli" : " Aşırı değerli"), text_size=opt_textsize, text_color=color.black, bgcolor=pearcolor) // P/E
+        table.cell(tbis, 2, 7, str.tostring(pb < 0 ? "Aşırı değerli" : math.abs(pb) <= 2 ? "Değerinin altında" : math.abs(pb) <= 3 ? "Değerinin altında" : math.abs(pb) <= 7 ? "Normal" : math.abs(pb) <= 10 ? "Aşırı değerli" : "Aşırı değerli"), text_size=opt_textsize, text_color=color.black, bgcolor=pbcolor) // PB
+        table.cell(tbis, 2, 8, str.tostring(de < 0 ? "Çok kötü" : math.abs(de) <= 0.1 ? "Çok güçlü" : math.abs(de) <= 0.5 ? "Güçlü" : math.abs(de) <= 1 ? "Normal" : math.abs(de) <= 2 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=decolor ) // 
+        table.cell(tbis, 2, 11, str.tostring(roe >= 30 ? "Çok güçlü" : roe >= 15 ? "Güçlü" : roe >= 0 ? "Normal" : roe >= -3 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=roecolor ) // 
+        table.cell(tbis, 2, 12, str.tostring(roepb >= 15 ? "Çok güçlü" : roepb >= 5 ? "Güçlü" : roepb >= 0 ? "Normal" : roepb >= -10 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=roepbcolor ) // 
+        table.cell(tbis, 2, 13, str.tostring(roa >= 20 ? "Çok güçlü" : roa >= 10 ? "Güçlü" : roa >= 0 ? "Normal" : roa >= -7  ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=roacolor ) // 
+        table.cell(tbis, 2, 14, str.tostring(roic >= 25 ? "Çok güçlü" : roic >= 12 ? "Güçlü" : roic >= 0 ? "Normal" : roic >= - 5 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=roiccolor ) // 
+        table.cell(tbis, 2, 15, str.tostring(dyield >= 8   ? "Çok yüksek" : dyield >= 4 ? "Yüksek" : dyield >= 2 ? "Normal" : dyield >= 0.5 ? "Low" : dyield == 0 ? "None" : "Çok düşük"), text_size=opt_textsize, text_color=color.black, bgcolor=dyieldcolor ) // 
+        table.cell(tbis, 2, 16, str.tostring(dpayout <= 10 and dpayout > 0 ? "Çok yüksek Int" : dpayout > 10 and dpayout <= 30 ? "Yüksek Int" : dpayout > 30 and dpayout <= 50 ? "Normal" : dpayout > 50 and dpayout <= 70 ? "Zayıf Int" : dpayout == 0 ? "None" : "Çok kötü Int"), text_size=opt_textsize, text_color=color.black, bgcolor=dpayoutcolor ) //
+        table.cell(tbis, 2, 17, str.tostring(fscore >= 9   ? "Çok güçlü" : fscore >= 7 ? "Güçlü" : fscore >= 5 ? "Normal" : fscore >= 3 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=fscorecolor  ) //
+        table.cell(tbis, 2, 18, str.tostring(SGR >= 50   ? "Çok yüksek" : SGR >= 30 ? "Yüksek" : SGR >= 10 ? "Normal" : SGR >= 5 ? "Zayıf" : "Çok kötü"), text_size=opt_textsize, text_color=color.black, bgcolor=sgrcolor  ) //
+        table.cell(tbis, 2, 19, '', bgcolor = color.new(color.black,100))
+        table.cell(tbis, 2, 20, str.tostring(ivDURUM), text_size=opt_textsize, text_color=color.black, bgcolor=ivcolor) // IV
+       
