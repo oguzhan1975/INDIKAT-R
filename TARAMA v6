@@ -1,0 +1,88 @@
+//@version=6
+indicator(title = 'TARAMA v6', shorttitle = 'TARAMA v6', overlay = true)
+
+// Kullanıcı girişi
+grupSec = input.string(defval = '1', options = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', 'ÖZEL LİSTE'], title = 'Grup seç')
+per = input.timeframe(defval='', title='PERİYOT',group = "Tarama yapmak istediğiniz periyotu seçin")
+loc = input.int(defval=10, title='Konum Ayarı', minval = -100,maxval = 100 , step = 5,  group='Tablonun konumunu belirleyin')
+
+// Tüm grupların sembollerini tek bir düz array'de tanımlama
+var array<string> tumSemboller = array.from('A1CAP', 'ACSEL', 'ADEL', 'ADESE', 'ADGYO', 'AEFES', 'AFYON', 'AGESA', 'AGHOL', 'AGROT', 'AGYO', 'AHGAZ', 'AHSGY', 'AKBNK', 'AKCNS', 'AKENR', 'AKFGY', 'AKFYE', 'AKGRT', 'AKMGY', 'AKSA', 'AKSEN', 'AKSGY', 'AKSUE', 'AKYHO', 'ALARK', 'ALBRK', 'ALCAR', 'ALCTL', 'ALFAS', 'ALGYO', 'ALKA', 'ALKIM', 'ALKLC', 'ALMAD', 'ALTIN', 'ALTNY', 'ALVES', 'ANELE', 'ANGEN', 'ANHYT', 'ANSGR', 'ARASE', 'ARCLK', 'ARDYZ', 'ARENA', 'ARSAN', 'ARTMS', 'ARZUM', 'ASELS', 'ASGYO', 'ASTOR', 'ASUZU', 'ATAGY', 'ATAKP', 'ATATP', 'ATEKS', 'ATLAS', 'ATSYH', 'AVGYO', 'AVHOL', 'AVOD', 'AVPGY', 'AVTUR', 'AYCES', 'AYDEM', 'AYEN', 'AYES', 'AYGAZ', 'AZTEK', 'BAGFS', 'BAHKM', 'BAKAB', 'BALAT', 'BANVT', 'BARMA', 'BASCM', 'BASGZ', 'BAYRK', 'BEGYO', 'BERA', 'BEYAZ', 'BFREN', 'BIENY', 'BIGCH', 'BIMAS', 'BINBN', 'BINHO', 'BIOEN', 'BIZIM', 'BJKAS', 'BLCYT', 'BMSCH', 'BMSTL', 'BNTAS', 'BOBET', 'BORLS', 'BORSK', 'BOSSA', 'BRISA', 'BRKO', 'BRKSN', 'BRKVY', 'BRLSM', 'BRMEN', 'BRSAN', 'BRYAT', 'BSOKE', 'BTCIM', 'BUCIM', 'BURCE', 'BURVA', 'BVSAN', 'BYDNR', 'CANTE', 'CASA', 'CATES', 'CCOLA', 'CELHA', 'CEMAS', 'CEMTS', 'CEMZY', 'CEOEM', 'CIMSA', 'CLEBI', 'CMBTN', 'CMENT', 'CONSE', 'COSMO', 'CRDFA', 'CRFSA', 'CUSAN', 'CVKMD', 'CWENE', 'DAGHL', 'DAGI', 'DAPGM', 'DARDL', 'DCTTR', 'DENGE', 'DERHL', 'DERIM', 'DESA', 'DESPC', 'DEVA', 'DGATE', 'DGGYO', 'DGNMO', 'DIRIT', 'DITAS', 'DMRGD', 'DMSAS', 'DNISI', 'DOAS', 'DOBUR', 'DOCO', 'DOFER', 'DOGUB', 'DOHOL', 'DOKTA', 'DURDO', 'DURKN', 'DYOBY', 'DZGYO', 'EBEBK', 'ECILC', 'ECZYT', 'EDATA', 'EDIP', 'EFORC', 'EGEEN', 'EGEPO', 'EGGUB', 'EGPRO', 'EGSER', 'EKGYO', 'EKIZ', 'EKOS', 'EKSUN', 'ELITE', 'EMKEL', 'EMNIS', 'ENERY', 'ENJSA', 'ENKAI', 'ENSRI', 'ENTRA', 'EPLAS', 'ERBOS', 'ERCB', 'EREGL', 'ERSU', 'ESCAR', 'ESCOM', 'ESEN', 'ETILR', 'ETYAT', 'EUHOL', 'EUKYO', 'EUPWR', 'EUREN', 'EUYO', 'EYGYO', 'FADE', 'FENER', 'FLAP', 'FMIZP', 'FONET', 'FORMT', 'FORTE', 'FRIGO', 'FROTO', 'FZLGY', 'GARAN', 'GARFA', 'GEDIK', 'GEDZA', 'GENIL', 'GENTS', 'GEREL', 'GESAN', 'GIPTA', 'GLBMD', 'GLCVY', 'GLRYH', 'GLYHO', 'GMTAS', 'GOKNR', 'GOLTS', 'GOODY', 'GOZDE', 'GRNYO', 'GRSEL', 'GRTHO', 'GSDDE', 'GSDHO', 'GSRAY', 'GUBRF', 'GUNDG', 'GWIND', 'GZNMI', 'HALKB', 'HATEK', 'HATSN', 'HDFGS', 'HEDEF', 'HEKTS', 'HKTM', 'HLGYO', 'HOROZ', 'HRKET', 'HTTBT', 'HUBVC', 'HUNER', 'HURGZ', 'ICBCT', 'ICUGS', 'IDGYO', 'IEYHO', 'IHAAS', 'IHEVA', 'IHGZT', 'IHLAS', 'IHLGM', 'IHYAY', 'IMASM', 'INDES', 'INFO', 'INGRM', 'INTEK', 'INTEM', 'INVEO', 'INVES', 'IPEKE', 'ISATR', 'ISBIR', 'ISBTR', 'ISCTR', 'ISDMR', 'ISFIN', 'ISGSY', 'ISGYO', 'ISKPL', 'ISKUR', 'ISMEN', 'ISSEN', 'ISYAT', 'IZENR', 'IZFAS', 'IZINV', 'IZMDC', 'JANTS', 'KAPLM', 'KAREL', 'KARSN', 'KARTN', 'KARYE', 'KATMR', 'KAYSE', 'KBORU', 'KCAER', 'KCHOL', 'KENT', 'KERVN', 'KERVT', 'KFEIN', 'KGYO', 'KIMMR', 'KLGYO', 'KLKIM', 'KLMSN', 'KLNMA', 'KLRHO', 'KLSER', 'KLSYN', 'KMPUR', 'KNFRT', 'KOCMT', 'KONKA', 'KONTR', 'KONYA', 'KOPOL', 'KORDS', 'KOTON', 'KOZAA', 'KOZAL', 'KRDMA', 'KRDMB', 'KRDMD', 'KRGYO', 'KRONT', 'KRPLS', 'KRSTL', 'KRTEK', 'KRVGD', 'KSTUR', 'KTLEV', 'KTSKR', 'KUTPO', 'KUVVA', 'KUYAS', 'KZBGY', 'KZGYO', 'LIDER', 'LIDFA', 'LILAK', 'LINK', 'LKMNH', 'LMKDC', 'LOGO', 'LRSHO', 'LUKSK', 'LYDHO', 'LYDYE', 'MAALT', 'MACKO', 'MAGEN', 'MAKIM', 'MAKTK', 'MANAS', 'MARBL', 'MARKA', 'MARTI', 'MAVI', 'MEDTR', 'MEGAP', 'MEGMT', 'MEKAG', 'MEPET', 'MERCN', 'MERIT', 'MERKO', 'METRO', 'METUR', 'MGROS', 'MHRGY', 'MIATK', 'MMCAS', 'MNDRS', 'MNDTR', 'MOBTL', 'MOGAN', 'MPARK', 'MRGYO', 'MRSHL', 'MSGYO', 'MTRKS', 'MTRYO', 'MZHLD', 'NATEN', 'NETAS', 'NIBAS', 'NTGAZ', 'NTHOL', 'NUGYO', 'NUHCM', 'OBAMS', 'OBASE', 'ODAS', 'ODINE', 'OFSYM', 'ONCSM', 'ONRYT', 'ORCAY', 'ORGE', 'ORMA', 'OSMEN', 'OSTIM', 'OTKAR', 'OTTO', 'OYAKC', 'OYAYO', 'OYLUM', 'OYYAT', 'OZATD', 'OZGYO', 'OZKGY', 'OZRDN', 'OZSUB', 'OZYSR', 'PAGYO', 'PAMEL', 'PAPIL', 'PARSN', 'PASEU', 'PATEK', 'PCILT', 'PEHOL', 'PEKGY', 'PENGD', 'PENTA', 'PETKM', 'PETUN', 'PGSUS', 'PINSU', 'PKART', 'PKENT', 'PLTUR', 'PNLSN', 'PNSUT', 'POLHO', 'POLTK', 'PRDGS', 'PRKAB', 'PRKME', 'PRZMA', 'PSDTC', 'PSGYO', 'QNBFL', 'QNBTR', 'QUAGR', 'RALYH', 'RAYSG', 'REEDR', 'RGYAS', 'RNPOL', 'RODRG', 'ROYAL', 'RTALB', 'RUBNS', 'RYGYO', 'RYSAS', 'SAFKR', 'SAHOL', 'SAMAT', 'SANEL', 'SANFM', 'SANKO', 'SARKY', 'SASA', 'SAYAS', 'SDTTR', 'SEGMN', 'SEGYO', 'SEKFK', 'SEKUR', 'SELEC', 'SELGD', 'SELVA', 'SEYKM', 'SILVR', 'SISE', 'SKBNK', 'SKTAS', 'SKYLP', 'SKYMD', 'SMART', 'SMRTG', 'SNGYO', 'SNICA', 'SNKRN', 'SNPAM', 'SODSN', 'SOKE', 'SOKM', 'SONME', 'SRVGY', 'SUMAS', 'SUNTK', 'SURGY', 'SUWEN', 'TABGD', 'TARKM', 'TATEN', 'TATGD', 'TAVHL', 'TBORG', 'TCELL', 'TCKRC', 'TDGYO', 'TEKTU', 'TERA', 'TEZOL', 'TGSAS', 'THYAO', 'TKFEN', 'TKNSA', 'TLMAN', 'TMPOL', 'TMSN', 'TNZTP', 'TOASO', 'TRCAS', 'TRGYO', 'TRILC', 'TSGYO', 'TSKB', 'TSPOR', 'TTKOM', 'TTRAK', 'TUCLK', 'TUKAS', 'TUPRS', 'TUREX', 'TURGG', 'TURSG', 'UFUK', 'ULAS', 'ULKER', 'ULUFA', 'ULUSE', 'ULUUN', 'UMPAS', 'UNLU', 'USAK', 'VAKBN', 'VAKFN', 'VAKKO', 'VANGD', 'VBTYZ', 'VERTU', 'VERUS', 'VESBE', 'VESTL', 'VKFYO', 'VKGYO', 'VKING', 'VRGYO', 'YAPRK', 'YATAS', 'YAYLA', 'YBTAS', 'YEOTK', 'YESIL', 'YGGYO', 'YGYO', 'YIGIT', 'YKBNK', 'YKSLN', 'YONGA', 'YUNSA', 'YYAPI', 'YYLGD', 'ZEDUR', 'ZOREN', 'ZRGYO')
+
+sb01 = input.symbol(title = '1' , defval = '')
+sb02 = input.symbol(title = '2' , defval = '')
+sb03 = input.symbol(title = '3' , defval = '')
+sb04 = input.symbol(title = '4' , defval = '')
+sb05 = input.symbol(title = '5' , defval = '')
+sb06 = input.symbol(title = '6' , defval = '')
+sb07 = input.symbol(title = '7' , defval = '')
+sb08 = input.symbol(title = '8' , defval = '')
+sb09 = input.symbol(title = '9' , defval = '')
+sb10 = input.symbol(title = '10', defval = '')
+sb11 = input.symbol(title = '11', defval = '')
+sb12 = input.symbol(title = '12', defval = '')
+sb13 = input.symbol(title = '13', defval = '')
+sb14 = input.symbol(title = '14', defval = '')
+sb15 = input.symbol(title = '15', defval = '')
+sb16 = input.symbol(title = '16', defval = '')
+sb17 = input.symbol(title = '17', defval = '')
+sb18 = input.symbol(title = '18', defval = '')
+sb19 = input.symbol(title = '19', defval = '')
+sb20 = input.symbol(title = '20', defval = '')
+sb21 = input.symbol(title = '21', defval = '')
+sb22 = input.symbol(title = '22', defval = '')
+sb23 = input.symbol(title = '23', defval = '')
+sb24 = input.symbol(title = '24', defval = '')
+sb25 = input.symbol(title = '25', defval = '')
+sb26 = input.symbol(title = '26', defval = '')
+sb27 = input.symbol(title = '27', defval = '')
+sb28 = input.symbol(title = '28', defval = '')
+sb29 = input.symbol(title = '29', defval = '')
+sb30 = input.symbol(title = '30', defval = '')
+sb31 = input.symbol(title = '31', defval = '')
+sb32 = input.symbol(title = '32', defval = '')
+sb33 = input.symbol(title = '33', defval = '')
+sb34 = input.symbol(title = '34', defval = '')
+sb35 = input.symbol(title = '35', defval = '')
+sb36 = input.symbol(title = '36', defval = '')
+sb37 = input.symbol(title = '37', defval = '')
+sb38 = input.symbol(title = '38', defval = '')
+sb39 = input.symbol(title = '39', defval = '')
+sb40 = input.symbol(title = '40', defval = '')
+
+// Seçilen grubun sembollerini al
+array<string> seciliSemboller = array.new<string>()
+array<string> groupSymbols = array.new<string>()
+
+
+// Eğer "ÖZEL LİSTE" seçildiyse, kullanıcı tarafından girilen sembollerle işlem yap
+seciliSemboller := array.from(sb01, sb02, sb03, sb04, sb05, sb06, sb07, sb08, sb09, sb10, sb11, sb12, sb13, sb14, sb15, sb16, sb17, sb18, sb19, sb20, sb21, sb22, sb23, sb24, sb25, sb26, sb27, sb28, sb29, sb30, sb31, sb32, sb33, sb34, sb35, sb36, sb37, sb38, sb39, sb40)
+
+grupNumarasi = math.round(str.tonumber(grupSec)) 
+
+// Sembolleri 40'lı gruplara bölüyoruz
+baslangic = (grupNumarasi - 1) * 40
+bitis = math.min(baslangic + 39, array.size(tumSemboller) - 1)
+if grupSec == 'ÖZEL LİSTE'
+    groupSymbols := seciliSemboller
+else
+    groupSymbols := array.slice(tumSemboller, baslangic, bitis + 1)
+
+// Tarama fonksiyonu
+func() =>
+    rsi = ta.rsi(close, 14)
+    cond = rsi <= 30
+    [close, cond]
+
+scr_label = 'TARAMA\n'
+for i = 0 to array.size(groupSymbols) - 1
+    sembol = array.get(groupSymbols, i)
+    [v, s] = request.security(sembol, per, func())
+    if s and sembol != ''
+        scr_label := scr_label + sembol + ' ' + str.tostring(v) + '\n'
+
+lab_1 = label.new(bar_index + loc, close, scr_label, color = color.green, textcolor = color.white, style = label.style_label_center)
+label.delete(lab_1[1])
+
+if str.length(scr_label) > 8
+    alert(scr_label, alert.freq_once_per_bar_close)
