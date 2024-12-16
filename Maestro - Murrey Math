@@ -1,0 +1,319 @@
+//@version=5
+indicator('Maestro - Murrey Math', shorttitle='Maestro - Murrey Math', overlay=true)
+twitter = input.string("@golgemed", group="",tooltip="")
+
+string res1 = input.timeframe(title='Resolution', defval='')
+int frame = input.int(defval=255, title='Frame Size', minval=8, maxval=256,tooltip="64, 100, 144, 255")
+float mult = input.float(defval=1, title='Frame Multiplier', minval=1.0, maxval=2.0, step=0.5)
+extendOption = input.string(title='Line Extension', options=['none', 'left', 'right', 'both'], defval='none')
+PlotToggle = input(false, "Show SuperTrend ")
+show_lines = input(defval=true, title='Çizgileri Göster')
+bool wicks = input(defval=true, title='Ignore Wicks?')
+show_level_value = input(title='Show Levels Value?', defval=true)
+show_current_levels = input(title='Show Current Levels', defval=false)
+lineExtend = extendOption == 'left' ? extend.left : extendOption == 'right' ? extend.right : extendOption == 'both' ? extend.both : extend.none
+show_historical_levels = input(title='Show Historical Levels?', defval=false)
+
+logTen = math.log(10)
+log8 = math.log(8)
+log2 = math.log(2)
+lookback = math.round(frame * mult)
+
+ss = syminfo.tickerid
+string res = res1 == '' ? timeframe.period : res1
+
+o = request.security(ss, res, open)
+c = request.security(ss, res, close)
+h = request.security(ss, res, high)
+l = request.security(ss, res, low)
+
+uPrice = wicks == true ? math.max(o, c) : h
+lPrice = wicks == true ? math.min(o, c) : l
+
+vLow1 = ta.lowest(lPrice, lookback)
+vHigh1 = ta.highest(uPrice, lookback)
+vLow = request.security(ss, res, vLow1)
+vHigh = request.security(ss, res, vHigh1)
+vDist = vHigh - vLow
+tmpHigh = vLow < 0 ? 0 - vLow : vHigh
+tmpLow = vLow < 0 ? 0 - vLow - vDist : vLow
+
+shift = vLow < 0 ? true : false
+
+sfVar = math.log(0.4 * tmpHigh) / logTen - math.floor(math.log(0.4 * tmpHigh) / logTen)
+SR = tmpHigh > 25 ? sfVar > 0 ? math.exp(logTen * (math.floor(math.log(0.4 * tmpHigh) / logTen) + 1)) : math.exp(logTen * math.floor(math.log(0.4 * tmpHigh) / logTen)) : 100 * math.exp(log8 * math.floor(math.log(0.005 * tmpHigh) / log8))
+nVar1 = math.log(SR / (tmpHigh - tmpLow)) / log8
+nVar2 = nVar1 - math.floor(nVar1)
+N = nVar1 <= 0 ? 0 : nVar2 == 0 ? math.floor(nVar1) : math.floor(nVar1) + 1
+
+SI = SR * math.exp(-N * log8)
+M = math.floor(1.0 / log2 * math.log((tmpHigh - tmpLow) / SI) + 0.0000001)
+I = math.round((tmpHigh + tmpLow) * 0.5 / (SI * math.exp((M - 1) * log2)))
+
+Bot = (I - 1) * SI * math.exp((M - 1) * log2)
+Top = (I + 1) * SI * math.exp((M - 1) * log2)
+
+doShift = tmpHigh - Top > 0.25 * (Top - Bot) or Bot - tmpLow > 0.25 * (Top - Bot)
+ER = doShift == true ? 1 : 0
+
+MM = ER == 0 ? M : ER == 1 and M < 2 ? M + 1 : 0
+NN = ER == 0 ? N : ER == 1 and M < 2 ? N : N - 1
+
+finalSI = ER == 1 ? SR * math.exp(-NN * log8) : SI
+finalI = ER == 1 ? math.round((tmpHigh + tmpLow) * 0.5 / (finalSI * math.exp((MM - 1) * log2))) : I
+finalBot = ER == 1 ? (finalI - 1) * finalSI * math.exp((MM - 1) * log2) : Bot
+finalTop = ER == 1 ? (finalI + 1) * finalSI * math.exp((MM - 1) * log2) : Top
+
+Increment = (finalTop - finalBot) / 8
+
+absTop = shift == true ? -(finalBot - 3 * Increment) : finalTop + 3 * Increment
+
+//-- create our Murrey line variables based on absolute top and the increment
+Plus38 = absTop
+Plus28 = absTop - Increment
+Plus18 = absTop - 2 * Increment
+EightEight = absTop - 3 * Increment
+SevenEight = absTop - 4 * Increment
+SixEight = absTop - 5 * Increment
+FiveEight = absTop - 6 * Increment
+FourEight = absTop - 7 * Increment
+ThreeEight = absTop - 8 * Increment
+TwoEight = absTop - 9 * Increment
+OneEight = absTop - 10 * Increment
+ZeroEight = absTop - 11 * Increment
+Minus18 = absTop - 12 * Increment
+Minus28 = absTop - 13 * Increment
+Minus38 = absTop - 14 * Increment
+
+plot(show_lines ? Plus38 : na, title='+3/8 Imminent Bearish reversal', style=plot.style_line, color=color.new(#008000, 0), linewidth=1)
+plot(show_lines ? Plus28 : na, title='+2/8 Extreme Overshoot conditions, can reverse anytime', style=plot.style_line, color=color.new(#FF0000, 0), linewidth=1)
+p6 = plot(show_lines ? Plus18 : na, title='+1/8 Overshoot conditions', style=plot.style_line, color=color.new(#808080, 0), linewidth=1)
+plot(show_lines ? EightEight : na, title='8/8 Ultimate resistance, extremely overbought conditions', style=plot.style_line, color=color.new(#0000FF, 0), linewidth=2)
+p5 = plot(show_lines ? SevenEight : na, title='7/8 Weak level, place to stop and reverse', style=plot.style_line, color=color.new(#808080, 0), linewidth=1)
+plot(show_lines ? SixEight : na, title='6/8 Strong pivot reverse', style=plot.style_line, color=color.new(#FF0000, 0), linewidth=1)
+p4 = plot(show_lines ? FiveEight : na, title='5/8 Top of trading range', style=plot.style_line, color=color.new(#008000, 0), linewidth=1)
+plot(show_lines ? FourEight : na, title='4/8 Major support/resistance pivot point', style=plot.style_line, color=color.new(#0000FF, 0), linewidth=2)
+p3 = plot(show_lines ? ThreeEight : na, title='3/8 Bottom of trading range', style=plot.style_line, color=color.new(#008000, 0), linewidth=1)
+plot(show_lines ? TwoEight : na, title='2/8 Strong, Pivot, reverse', style=plot.style_line, color=color.new(#FF0000, 0), linewidth=1)
+p2 = plot(show_lines ? OneEight : na, title='1/8 Weak, place to stop and reverse', style=plot.style_line, color=color.new(#808080, 0), linewidth=1)
+plot(show_lines ? ZeroEight : na, title='0/8 Hardest line to fall below, oversold conditions', style=plot.style_line, color=color.new(#0000FF, 0), linewidth=2)
+p1 = plot(show_lines ? Minus18 : na, title='-1/8 Oversold conditions', style=plot.style_line, color=color.new(#808080, 0), linewidth=1)
+plot(show_lines ? Minus28 : na, title='-2/8 Extreme oversold conditions, can reverse anytime', style=plot.style_line, color=color.new(#FF0000, 0), linewidth=1)
+plot(show_lines ? Minus38 : na, title='-3/8 Imminent bullish reversal ', style=plot.style_line, color=color.new(#008000, 0), linewidth=1)
+
+fill(p1, p2, color=color.new(#008000, 93), title='Aşırı Satım Bölgesi')
+fill(p3, p4, color=color.new(#9bd4e4, 93), title='Denge Bölgesi')
+fill(p5, p6, color=color.new(#FF0000, 95), title='Aşırı Alım Bölgesi')
+
+// Function outputs 1 when it's the first bar of the D/W/M/Y
+is_newbar(res) =>
+    ch = 0
+    if res == 'Y'
+        t = year(time('D'))
+        ch := ta.change(t) != 0 ? 1 : 0
+        ch
+    else
+        t = time(res)
+        ch := ta.change(t) != 0 ? 1 : 0
+        ch
+    ch
+
+// ALERTS //
+ot = ta.crossover(close, Plus38) or ta.crossunder(close, Plus38) or ta.crossover(close, Plus28) or ta.crossunder(close, Plus28) or ta.crossover(close, Plus18) or ta.crossunder(close, Plus18) or ta.crossover(close, EightEight) or ta.crossunder(close, EightEight) or ta.crossover(close, SevenEight) or ta.crossunder(close, SevenEight) or ta.crossover(close, SixEight) or ta.crossunder(close, SixEight) or ta.crossover(close, FiveEight) or ta.crossunder(close, FiveEight) or ta.crossover(close, FourEight) or ta.crossunder(close, FourEight) or ta.crossover(close, ThreeEight) or ta.crossunder(close, ThreeEight) or ta.crossover(close, TwoEight) or ta.crossunder(close, TwoEight) or ta.crossover(close, OneEight) or ta.crossunder(close, OneEight) or ta.crossover(close, ZeroEight) or ta.crossunder(close, ZeroEight) or ta.crossover(close, Minus18) or ta.crossunder(close, Minus18) or ta.crossover(close, Minus28) or ta.crossunder(close, Minus28) or ta.crossover(close, Minus38) or ta.crossunder(close, Minus38)
+
+alertcondition(ot, title='Alert me when Octaves Change!', message='Octaves Change - Alert!')
+
+alertcondition(not is_newbar('D') and ta.crossover(close, Plus38), 'Crossover +3/8', 'Crossover +3/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, Plus28), 'Crossover +2/8', 'Crossover +2/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, Plus18), 'Crossover +1/8', 'Crossover +1/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, EightEight), 'Crossover 8/8', 'Crossover 8/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, SevenEight), 'Crossover 7/8', 'Crossover 7/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, SixEight), 'Crossover 6/8', 'Crossover 6/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, FiveEight), 'Crossover 5/8', 'Crossover 5/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, FourEight), 'Crossover 4/8', 'Crossover 4/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, ThreeEight), 'Crossover 3/8', 'Crossover 3/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, TwoEight), 'Crossover 2/8', 'Crossover 2/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, OneEight), 'Crossover 1/8', 'Crossover 1/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, ZeroEight), 'Crossover 0/8', 'Crossover 0/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, Minus18), 'Crossover -1/8', 'Crossover -1/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, Minus28), 'Crossover -2/8', 'Crossover -2/8')
+alertcondition(not is_newbar('D') and ta.crossover(close, Minus38), 'Crossover -3/8', 'Crossover -3/8')
+
+
+alertcondition(not is_newbar('D') and ta.crossunder(close, Plus38), 'Crossunder +3/8', 'Crossunder +3/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, Plus28), 'Crossunder +2/8', 'Crossunder +2/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, Plus18), 'Crossunder +1/8', 'Crossunder +1/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, EightEight), 'Crossunder 8/8', 'Crossunder 8/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, SevenEight), 'Crossunder 7/8', 'Crossunder 7/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, SixEight), 'Crossunder 6/8', 'Crossunder 6/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, FiveEight), 'Crossunder 5/8', 'Crossunder 5/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, ThreeEight), 'Crossunder 4/8', 'Crossunder 4/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, FourEight), 'Crossunder 3/8', 'Crossunder 3/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, TwoEight), 'Crossunder 2/8', 'Crossunder 2/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, OneEight), 'Crossunder 1/8', 'Crossunder 1/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, ZeroEight), 'Crossunder 0/8', 'Crossunder 0/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, Minus18), 'Crossunder -1/8', 'Crossunder -1/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, Minus28), 'Crossunder -2/8', 'Crossunder -2/8')
+alertcondition(not is_newbar('D') and ta.crossunder(close, Minus38), 'Crossunder -3/8', 'Crossunder -3/8')
+
+
+nround(x) =>
+    n = math.round(x / syminfo.mintick) * syminfo.mintick
+    n
+
+
+bars_sinse = 0
+bars_sinse := is_newbar('D') ? 0 : bars_sinse[1] + 1
+//-- plot the lines and we are done
+vsm1_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus38, bar_index, Plus38, color=color.rgb(255, 0, 0), style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm1_p, extend=lineExtend)
+vsm2_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus28, bar_index, Plus28, color=color.red, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm2_p, extend=lineExtend)
+vsm3_p = line.new(bar_index[math.min(bars_sinse, 300)], Plus18, bar_index, Plus18, color=color.red, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm3_p, extend=lineExtend)
+vsm4_p = line.new(bar_index[math.min(bars_sinse, 300)], EightEight, bar_index, EightEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm4_p, extend=lineExtend)
+vsm5_p = line.new(bar_index[math.min(bars_sinse, 300)], SevenEight, bar_index, SevenEight, color=color.orange, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm5_p, extend=lineExtend)
+vsm6_p = line.new(bar_index[math.min(bars_sinse, 300)], SixEight, bar_index, SixEight, color=color.fuchsia, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm6_p, extend=lineExtend)
+vsm7_p = line.new(bar_index[math.min(bars_sinse, 300)], FiveEight, bar_index, FiveEight, color=color.green, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm7_p, extend=lineExtend)
+vsm8_p = line.new(bar_index[math.min(bars_sinse, 300)], FourEight, bar_index, FourEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm8_p, extend=lineExtend)
+vsm9_p = line.new(bar_index[math.min(bars_sinse, 300)], ThreeEight, bar_index, ThreeEight, color=color.green, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm9_p, extend=lineExtend)
+vsm10_p = line.new(bar_index[math.min(bars_sinse, 300)], TwoEight, bar_index, TwoEight, color=color.fuchsia, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm10_p, extend=lineExtend)
+vsm11_p = line.new(bar_index[math.min(bars_sinse, 300)], OneEight, bar_index, OneEight, color=color.orange, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm11_p, extend=lineExtend)
+vsm12_p = line.new(bar_index[math.min(bars_sinse, 300)], ZeroEight, bar_index, ZeroEight, color=color.aqua, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm12_p, extend=lineExtend)
+vsm13_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus18, bar_index, Minus18, color=color.green, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm13_p, extend=lineExtend)
+vsm14_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus28, bar_index, Minus28, color=color.green, style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm14_p, extend=lineExtend)
+vsm15_p = line.new(bar_index[math.min(bars_sinse, 300)], Minus38, bar_index, Minus38, color=color.rgb(0, 0, 0), style=line.style_dotted, extend=extend.none, width=2)
+line.set_extend(id=vsm15_p, extend=lineExtend)
+
+if not is_newbar('D') or not show_historical_levels
+    //line.delete(vpp_p[1])
+    line.delete(vsm1_p[1])
+    line.delete(vsm2_p[1])
+    line.delete(vsm3_p[1])
+    line.delete(vsm4_p[1])
+    line.delete(vsm5_p[1])
+    line.delete(vsm6_p[1])
+    line.delete(vsm7_p[1])
+    line.delete(vsm8_p[1])
+    line.delete(vsm9_p[1])
+    line.delete(vsm10_p[1])
+    line.delete(vsm11_p[1])
+    line.delete(vsm12_p[1])
+    line.delete(vsm13_p[1])
+    line.delete(vsm14_p[1])
+    line.delete(vsm15_p[1])
+
+//Labelling
+label_vsm1 = label.new(bar_index, Plus38, text=show_level_value ? '+3/8 Tersine dönüş -- ' + ' ' + str.tostring(nround(Plus38)) : '+3/8 Imminent Bearish reversal -- ', style=label.style_label_left,  textcolor=color.red, color=color.new(#FF0000, 100))
+label_vsm2 = label.new(bar_index, Plus28, text=show_level_value ? '+2/8 İleri Aşırı Alım  -- ' + ' ' + str.tostring(nround(Plus28)) : '+2/8 Extreme Overshoot -- ', style=label.style_label_left, textcolor=color.red, color=color.new(#FF0000, 100))
+label_vsm3 = label.new(bar_index, Plus18, text=show_level_value ? '+1/8 Aşırı Alım  -- ' + ' ' + str.tostring(nround(Plus18)) : '+1/8 Overshoot -- ', style=label.style_label_left, textcolor=color.red, color=color.new(#FF0000, 100))
+label_vsm4 = label.new(bar_index, EightEight, text=show_level_value ? '8/8 Güçlü Direnç -- ' + ' ' + str.tostring(nround(EightEight)) : '8/8 Ultimate resistance -- ', style=label.style_label_left, textcolor=color.aqua, color=color.new(#FF0000, 100))
+label_vsm5 = label.new(bar_index, SevenEight, text=show_level_value ? '7/8 Zayıf Destek/Direnç -- ' + ' ' + str.tostring(nround(SevenEight)) : '7/8 Weak, Stop & Reverse -- ', style=label.style_label_left, textcolor=color.orange, color=color.new(#FF0000, 100))
+label_vsm6 = label.new(bar_index, SixEight, text=show_level_value ? '6/8 Güçlü Pivot Geri Dönüş -- ' + ' ' + str.tostring(nround(SixEight)) : '6/8 Strong pivot reverse -- ', style=label.style_label_left, textcolor=color.fuchsia, color=color.new(#FF0000, 100))
+label_vsm7 = label.new(bar_index, FiveEight, text=show_level_value ? '5/8 Trade Aralığı Tepe Seviyesi -- ' + ' ' + str.tostring(nround(FiveEight)) : '5/8 Top of trading range -- ', style=label.style_label_left, textcolor=color.green, color=color.new(#FF0000, 100))
+label_vsm8 = label.new(bar_index, FourEight, text=show_level_value ? '4/8 Ana Destek/Direnç -- ' + ' ' + str.tostring(nround(FourEight)) : '4/8 Major S/R pivot point -- ', style=label.style_label_left, textcolor=color.aqua, color=color.new(#FF0000, 100))
+label_vsm9 = label.new(bar_index, ThreeEight, text=show_level_value ? '3/8 Trade Aralığı Dip -- ' + ' ' + str.tostring(nround(ThreeEight)) : '3/8 Bottom of trading range -- ', style=label.style_label_left, textcolor=color.green, color=color.new(#FF0000, 100))
+label_vsm10 = label.new(bar_index, TwoEight, text=show_level_value ? '2/8 Güçlü Pivot Geri Dönüş -- ' + ' ' + str.tostring(nround(TwoEight)) : '2/8 Strong, Pivot, reverse -- ', style=label.style_label_left, textcolor=color.fuchsia, color=color.new(#FF0000, 100))
+label_vsm11 = label.new(bar_index, OneEight, text=show_level_value ? '1/8 Zayıf Destek/Direnç -- ' + ' ' + str.tostring(nround(OneEight)) : '1/8 Weak, Stop & Reverse -- ', style=label.style_label_left, textcolor=color.orange, color=color.new(#FF0000, 100))
+label_vsm12 = label.new(bar_index, ZeroEight, text=show_level_value ? '0/8 Güçlü Destek -- ' + ' ' + str.tostring(nround(ZeroEight)) : '0/8 ultimate Support -- ', style=label.style_label_left, textcolor=color.aqua, color=color.new(#FF0000, 100))
+label_vsm13 = label.new(bar_index, Minus18, text=show_level_value ? '-1/8 Aşırı Satım -- ' + ' ' + str.tostring(nround(Minus18)) : '-1/8 Oversold -- ', style=label.style_label_left, textcolor=color.green, color=color.new(#FF0000, 100))
+label_vsm14 = label.new(bar_index, Minus28, text=show_level_value ? '-2/8 İleri Aşırı Satım -- ' + ' ' + str.tostring(nround(Minus28)) : '-2/8 Extreme Oversold -- ', style=label.style_label_left, textcolor=color.green, color=color.new(#FF0000, 100))
+label_vsm15 = label.new(bar_index, Minus38, text=show_level_value ? '-3/8 Geçmiş olsun-- ' + ' ' + str.tostring(nround(Minus38)) : '-3/8 Imminent Bullish reversal -- ', style=label.style_label_left, textcolor=color.green, color=color.new(#FF0000, 100))
+//Label delete
+if not is_newbar('D') or not show_historical_levels
+    label.delete(label_vsm1[1])
+    label.delete(label_vsm2[1])
+    label.delete(label_vsm3[1])
+    label.delete(label_vsm4[1])
+    label.delete(label_vsm5[1])
+    label.delete(label_vsm6[1])
+    label.delete(label_vsm7[1])
+    label.delete(label_vsm8[1])
+    label.delete(label_vsm9[1])
+    label.delete(label_vsm10[1])
+    label.delete(label_vsm11[1])
+    label.delete(label_vsm12[1])
+    label.delete(label_vsm13[1])
+    label.delete(label_vsm14[1])
+    label.delete(label_vsm15[1])
+
+
+// İstatistik Tablosu
+// --------
+Group1        = 'SuperTrend Table / SuperTrend Tablo  '
+TikTab      = input(true, 'SuperTrend Table / SuperTrend Tablo  ', group=Group1)
+
+times1         = input.timeframe('60', 'Zaman Dilimi / TimeFrame - A', group=Group1)
+times2         = input.timeframe('120', 'Zaman Dilimi / TimeFrame - B', group=Group1)
+times3         = input.timeframe('240', 'Zaman Dilimi / TimeFrame - C', group=Group1)
+times4         = input.timeframe('D','Zaman Dilimi / TimeFrame - D', group=Group1)
+times5         = input.timeframe('W', 'Zaman Dilimi / TimeFrame - E', group=Group1)
+
+
+
+TablePos     = input.string('Sağ Yukarı / Top Right', 'Tablo Pozisyonu / Table Position', ['Sağ Yukarı / Top Right', 'Sağ Orta / Middle Right', 'Sol Alt / Bottom Left',"Sağ Alt / Bottom Right"], group=Group1)
+TablePosTextCol     = input.color(#000000, 'Text', inline='1', group=Group1)
+TablePosTextCol2     = input.color(color.rgb(255, 255, 255), 'Text', inline='1', group=Group1)
+TextSize1   = input.string('Normal', 'Tablo Yazı Büyüklüğü / Table Font Size', ['Normal', 'Küçük / Small', 'Büyük / Large'], group=Group1)
+textSize    = TextSize1=='Normal'? size.small : TextSize1=='Küçük / Small'? size.tiny : size.normal 
+
+tabPos      = TablePos=='Sağ Yukarı / Top Right'? position.top_right :  TablePos=='Sol Alt / Bottom Left'? position.bottom_left :TablePos=='Sağ Orta / Middle Right'? position.middle_right:position.bottom_right
+
+var bgcolor = color.black
+var framecolor = color.new(color.black, 0)
+var framewidth = 1
+var textcolor = color.new(color.black, 1)
+var textwidth = 0
+
+var SuperTrendTable = table.new(tabPos, 50, 50, bgcolor, framecolor, framewidth, textcolor, textwidth)
+//------------------------
+atrPeriod = input(10, "ATR Length / ATR Uzunluğu")
+factor = input.float(3.0, "Factor", step = 0.01)
+
+[supertrend, direction] = ta.supertrend(factor, atrPeriod)
+plotToggleCondition = PlotToggle ? display.all : display.none
+
+plot((open + close) / 2, display=display.none)
+plot(direction < 0 ? supertrend : na, "Up Trend", color=color.rgb(21, 126, 24), style=plot.style_linebr, display=plotToggleCondition)
+plot(direction < 0 ? na : supertrend, "Down Trend", color=color.red, style=plot.style_linebr, display=plotToggleCondition)
+
+yuseksup = ta.sma(supertrend,1)
+sartsuper= direction < 0 ? 1 : direction > 0 ? -1 : na
+
+fonksiyonsuper()=>
+    sartsuper
+    
+fonsuperrenk(x) => x=="Up Trend" ? #24f02b : x== "Down Trend" ? color.red : na
+
+fTable(rowNumber,times )=>
+
+    superyeni = request.security(syminfo.ticker, times, fonksiyonsuper())
+    superrakam= request.security(syminfo.ticker, times, str.tostring(supertrend,format.mintick))
+    yenisuper = superyeni == 1 ? "Up Trend"   : superyeni == -1 ? "Down Trend"  : na
+    yazisuper = superrakam
+    superrenkli=fonsuperrenk(yenisuper)
+    if TikTab
+        table.cell(SuperTrendTable, 0, 0, 'Period'    , text_color=TablePosTextCol2, text_size=textSize, bgcolor=color.black)
+        table.cell(SuperTrendTable, 0, 1, 'STrend '    , text_color=TablePosTextCol2, text_size=textSize, bgcolor=color.black)
+ 
+        tfDes   = times==''? timeframe.period : times
+        table.cell(SuperTrendTable,rowNumber, 0, tfDes  , text_color=TablePosTextCol2, text_size=textSize, bgcolor=bgcolor)
+        table.cell(SuperTrendTable,rowNumber, 1, yenisuper, text_color=TablePosTextCol, text_size=textSize, bgcolor=superrenkli)
+        table.cell(SuperTrendTable,rowNumber, 2, yazisuper, text_color=TablePosTextCol, text_size=textSize, bgcolor=superrenkli)
+    
+fTable(1,times1)
+fTable(2,times2)
+fTable(3,times3)
+fTable(4,times4)
+fTable(5,times5)
