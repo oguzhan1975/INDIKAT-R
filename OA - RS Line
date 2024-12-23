@@ -1,0 +1,68 @@
+//@version=6
+indicator('OA - RS Line', overlay = false, max_bars_back = 5000)
+
+
+// User Inputs
+iIndex = input.symbol(title = 'Index', defval = 'XU100', tooltip = 'Index to be used as reference for calculating the RS line')
+iLookbackCount = input.int(title = 'Bars to Look Back', defval = 30, minval = 1, maxval = 100, tooltip = 'Number of bars to look back for detecting new highs of the RS line')
+emaLength = input.int(title = 'EMA Length', defval = 21, minval = 1, tooltip = 'Period used to calculate the EMA of the RS line')
+
+
+// Fetch reference values
+comp_close = request.security(iIndex, 'D', close)
+current_close = close
+
+
+// Normalize - Calculate percentage changes assuming initial values are 100
+var float comp_base = 0.0
+var float current_base = 0.0
+
+
+if bar_index == 0
+    comp_base := comp_close
+    current_base := current_close
+    current_base
+
+
+// Normalized change percentages
+comp_change = comp_close / comp_base * 100
+current_change = current_close / current_base * 100
+
+
+// Relative strength ratio
+base_rat = current_change / comp_change * 100
+currentRatio = ta.ema(base_rat, 5)
+// Calculate the EMA of the RS line
+emaLine = ta.ema(base_rat, emaLength)
+
+
+// Plot RS line and EMA line
+rsLinePlot = plot(currentRatio, color = color.aqua, linewidth = 1, title = 'RS Line')
+emaPlot = plot(emaLine, color = color.red, linewidth = 1, title = 'EMA Line')
+
+
+// Fill the area between RS line and EMA line
+fill_color = currentRatio > emaLine ? color.new(color.aqua, 50) : color.new(color.purple, 50)
+fill(rsLinePlot, emaPlot, color = fill_color)
+
+
+// Detect new highs and create labels
+// Check for new RS highs
+rsNewHigh = currentRatio == ta.highest(currentRatio, iLookbackCount)
+
+
+// Check if the current price is making a new high
+priceNewHigh = close == ta.highest(close, iLookbackCount)
+
+
+// Check for 52-week high
+rs52WHigh = ta.highest(currentRatio, 252)
+if currentRatio == rs52WHigh
+    label.new(x = bar_index, y = currentRatio, text = '', color = color.new(color.green, 25), style = label.style_circle, size = size.tiny)
+
+
+// If the RS line makes a new high but the price has not yet, and it’s not a 52-week high
+if rsNewHigh and not priceNewHigh and not(currentRatio == rs52WHigh)
+    label.new(x = bar_index, y = currentRatio, text = '', color = color.new(color.purple, 25), style = label.style_circle, size = size.tiny)
+
+
