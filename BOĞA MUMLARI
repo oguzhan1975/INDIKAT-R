@@ -1,0 +1,720 @@
+//@version=6
+indicator("BOĞA MUMLARI - MumBeyi", shorttitle = "MUM FORMASYONLARI", overlay=true)
+group = input.string(defval = "A", title = "TARAMA GROUP", options = ["A","A-B","B-C","C-D-E","E-F","F-G-H","H-I-İ-J-K","K","K-L-M","M-N-O-Ö","P-Q-R","S-Ş-T","T-U-Ü","U-V-Y-Z","SPECIAL"])
+C_DownTrend = true
+C_UpTrend = true
+var trendRule1 = "SMA50"
+var trendRule2 = "SMA50, SMA200"
+var trendRule = input.string(trendRule1, "TEMEL TRENDİNİZİ SEÇİNİZ", options=[trendRule1, trendRule2, "TRENDSİZ TESPİT"])
+
+if trendRule == trendRule1
+	priceAvg = ta.sma(close, 50)
+	C_DownTrend := close < priceAvg
+	C_UpTrend := close > priceAvg
+
+if trendRule == trendRule2
+	sma200 = ta.sma(close, 200)
+	sma50 = ta.sma(close, 50)
+	C_DownTrend := close < sma50 and sma50 < sma200
+	C_UpTrend := close > sma50 and sma50 > sma200
+C_Len = 14 // ta.ema depth for bodyAvg
+C_ShadowPercent = 5.0 // size of shadows
+C_ShadowEqualsPercent = 100.0
+C_DojiBodyPercent = 5.0
+C_Factor = 2.0 // shows the number of times the shadow dominates the candlestick body
+
+C_BodyHi = math.max(close, open)
+C_BodyLo = math.min(close, open)
+C_Body = C_BodyHi - C_BodyLo
+C_BodyAvg = ta.ema(C_Body, C_Len)
+C_SmallBody = C_Body < C_BodyAvg
+C_LongBody = C_Body > C_BodyAvg
+C_UpShadow = high - C_BodyHi
+C_DnShadow = C_BodyLo - low
+C_HasUpShadow = C_UpShadow > C_ShadowPercent / 100 * C_Body
+C_HasDnShadow = C_DnShadow > C_ShadowPercent / 100 * C_Body
+C_WhiteBody = open < close
+C_BlackBody = open > close
+C_Range = high-low
+C_IsInsideBar = C_BodyHi[1] > C_BodyHi and C_BodyLo[1] < C_BodyLo
+C_BodyMiddle = C_Body / 2 + C_BodyLo
+C_ShadowEquals = C_UpShadow == C_DnShadow or (math.abs(C_UpShadow - C_DnShadow) / C_DnShadow * 100) < C_ShadowEqualsPercent and (math.abs(C_DnShadow - C_UpShadow) / C_UpShadow * 100) < C_ShadowEqualsPercent
+C_IsDojiBody = C_Range > 0 and C_Body <= C_Range * C_DojiBodyPercent / 100
+C_Doji = C_IsDojiBody and C_ShadowEquals
+
+patternLabelPosLow = low - (ta.atr(30) * 0.6)
+patternLabelPosHigh = high + (ta.atr(30) * 0.6)
+label_color_bullish = input(color.red, "HAMİLE  UYARI RENGİ")
+C_HaramiBullishNumberOfCandles = 2
+C_HaramiBullish = C_LongBody[1] and C_BlackBody[1] and C_DownTrend[1] and C_WhiteBody and C_SmallBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+
+if C_HaramiBullish
+    var ttBullishHarami = "Teyit seviyesi, formasyonun oluştuğu ikinci barın kapanış fiyatı ile ilk barın gövdesinin orta noktası kıyaslanarak, bunlardan yüksek olanı olarak belirlenir."
+    label.new(bar_index, patternLabelPosLow, text="HAMİLE", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishHarami)
+bgcolor(ta.highest(C_HaramiBullish?1:0, C_HaramiBullishNumberOfCandles)!=0 ? color.new(color.red, 50) : na, title = 'HAMİLE ',offset=-(C_HaramiBullishNumberOfCandles-1))
+
+
+
+
+patternLabelPosLoww = low - (ta.atr(30) * 0.6)
+patternLabelPosHighh = high + (ta.atr(30) * 0.6)
+label_color_bullishh = input(color.green, "YUTAN UYARI RENGİ")
+C_EngulfingBullishNumberOfCandles = 2
+C_EngulfingBullish = C_DownTrend and C_WhiteBody and C_LongBody and C_BlackBody[1] and C_SmallBody[1] and close >= open[1] and open <= close[1] and ( close > open[1] or open < close[1] )
+
+if C_EngulfingBullish
+    var ttBullishEngulfing = "Teyit seviyesi son barın kapanış fiyatıdır."
+    label.new(bar_index, patternLabelPosLow, text="YUTAN", style=label.style_label_up, color = label_color_bullishh, textcolor=color.white, tooltip = ttBullishEngulfing)
+bgcolor(ta.highest(C_EngulfingBullish?1:0, C_EngulfingBullishNumberOfCandles)!=0 ? color.new(color.green, 50) : na, title = 'YUTAN ',offset=-(C_EngulfingBullishNumberOfCandles-1))
+
+
+
+patternLabelPosLowww = low - (ta.atr(30) * 0.6)
+patternLabelPosHighhh = high + (ta.atr(30) * 0.6)
+label_color_bullishhh = input(color.blue, "ÇEKİÇ UYARI RENGİ")
+C_HammerBullishNumberOfCandles = 1
+C_HammerBullish = false
+if C_SmallBody and C_Body > 0 and C_BodyLo > hl2 and C_DnShadow >= C_Factor * C_Body and not C_HasUpShadow
+    if C_DownTrend
+        C_HammerBullish := true
+
+if C_HammerBullish
+    var ttBullishHammer = "Teyit seviyesi çekiç gövdesinin üst sınırıdır."
+    label.new(bar_index, patternLabelPosLow, text="ÇEKİÇ ", style=label.style_label_up, color = label_color_bullishhh, textcolor=color.white, tooltip = ttBullishHammer)
+bgcolor(ta.highest(C_HammerBullish?1:0, C_HammerBullishNumberOfCandles)!=0 ? color.new(color.blue, 50) : na,title = 'ÇEKİÇ ', offset=-(C_HammerBullishNumberOfCandles-1))
+
+
+patternLabelPosLowW = low - (ta.atr(30) * 0.6)
+patternLabelPosHighH = high + (ta.atr(30) * 0.6)
+label_color_bullishH = input(color.blue, "DOJİ UYARI RENGİ")
+C_DojiStarBullishNumberOfCandles = 2
+C_DojiStarBullish = false
+if C_DownTrend and C_BlackBody[1] and C_LongBody[1] and C_IsDojiBody and C_BodyHi < C_BodyLo[1]
+	C_DojiStarBullish := true
+
+if C_DojiStarBullish
+    var ttBullishDojiStar = "Teyit seviyesi Doji ile önceki siyah mum çubuğu arasındaki boşluğun orta noktasıdır."
+    label.new(bar_index, patternLabelPosLow, text="DOJİ YILDIZ", style=label.style_label_up, color = label_color_bullishH, textcolor=color.white, tooltip = ttBullishDojiStar)
+bgcolor(ta.highest(C_DojiStarBullish?1:0, C_DojiStarBullishNumberOfCandles)!=0 ? color.new(color.gray, 50) : na,title = 'DOJİ ', offset=-(C_DojiStarBullishNumberOfCandles-1))
+
+patternLabelPosLowWW = low - (ta.atr(30) * 0.6)
+patternLabelPosHighHH= high + (ta.atr(30) * 0.6)
+label_color_bullishHH = input(color.rgb(24, 7, 34), "DELEN MUM  UYARI RENGİ")
+C_PiercingBullishNumberOfCandles = 2
+C_PiercingBullish = false
+if (C_DownTrend[1] and C_BlackBody[1] and C_LongBody[1]) and (C_WhiteBody and open <= low[1] and close > C_BodyMiddle[1] and close < open[1])
+	C_PiercingBullish := true
+
+if C_PiercingBullish
+    var ttBullishPiercing = "Teyit seviyesi son barın kapanış fiyatıdır."
+    label.new(bar_index, patternLabelPosLow, text="DELEN", style=label.style_label_up, color = label_color_bullishHH, textcolor=color.white, tooltip = ttBullishPiercing)
+bgcolor(ta.highest(C_PiercingBullish?1:0, C_PiercingBullishNumberOfCandles)!=0 ? color.new(color.blue, 50) : na, title = 'DELEN MUM ',offset=-(C_PiercingBullishNumberOfCandles-1))
+
+
+
+ppatternLabelPosLow = low - (ta.atr(30) * 0.6)
+ppatternLabelPosHigh = high + (ta.atr(30) * 0.6)
+llabel_color_bullish = input(color.rgb(52, 13, 70), "TERS ÇEKİÇ  UYARI RENGİ")
+C_InvertedHammerBullishNumberOfCandles = 1
+C_InvertedHammerBullish = false
+if C_SmallBody and C_Body > 0 and C_BodyHi < hl2 and C_UpShadow >= C_Factor * C_Body and not C_HasDnShadow
+    if C_DownTrend
+        C_InvertedHammerBullish := true
+
+if C_InvertedHammerBullish
+    var ttBullishInvertedHammer = "Teyit seviyesi Ters Çekiç’in üst gölgesinin orta noktasıdır." 
+    label.new(bar_index, patternLabelPosLow, text="TERS ÇEKİÇ", style=label.style_label_up, color = llabel_color_bullish, textcolor=color.white, tooltip = ttBullishInvertedHammer)
+bgcolor(ta.highest(C_InvertedHammerBullish?1:0, C_InvertedHammerBullishNumberOfCandles)!=0 ? color.new(#1ab9a4, 50) : na,title = 'TER ÇEKİÇ ', offset=-(C_InvertedHammerBullishNumberOfCandles-1))
+
+
+
+PpatternLabelPosLow = low - (ta.atr(30) * 0.6)
+PatternLabelPosHigh = high + (ta.atr(30) * 0.6)
+Llabel_color_bullish = input(color.rgb(161, 67, 138, 38), "KROS HAMİLE UYARI RENGİ")
+C_HaramiCrossBullishNumberOfCandles = 2
+C_HaramiCrossBullish = C_LongBody[1] and C_BlackBody[1] and C_DownTrend[1] and C_IsDojiBody and high <= C_BodyHi[1] and low >= C_BodyLo[1]
+
+if C_HaramiCrossBullish
+    var ttBullishHaramiCross = "Teyit seviyesi formasyonun ilk mum çubuğunun gövde uzunluğuna göre değişmektedir. İlk mum çubuğun gövdesi kısaysa teyit seviyesi ilk mum çubuğunun gövde üst seviyesidir. İlk mum çubuğun gövdesi kısa değilse formasyonun oluştuğu ikinci barın kapanış fiyatı ile ilk barın gövdesinin orta noktası kıyaslanarak, bunlardan yüksek olanı olarak belirlenir."
+    label.new(bar_index, patternLabelPosLow, text="KROS HAMİLE", style=label.style_label_up, color = Llabel_color_bullish, textcolor=color.white, tooltip = ttBullishHaramiCross)
+bgcolor(ta.highest(C_HaramiCrossBullish?1:0, C_HaramiCrossBullishNumberOfCandles)!=0 ? color.new(#169b21, 50) : na, title = 'KROS HAMİLE ',offset=-(C_HaramiCrossBullishNumberOfCandles-1))
+
+
+PPpatternLabelPosLow = low - (ta.atr(30) * 0.6)
+patternLabelPosHighHHH = high + (ta.atr(30) * 0.6)
+label_color_bullishHHHH = input(color.blue, "SABAH YILDIZI UYARI RENGİ")
+C_MorningStarBullishNumberOfCandles = 3
+C_MorningStarBullish = false
+if C_LongBody[2] and C_SmallBody[1] and C_LongBody
+    if C_DownTrend and C_BlackBody[2] and C_BodyHi[1] < C_BodyLo[2] and C_WhiteBody and C_BodyHi >= C_BodyMiddle[2] and C_BodyHi < C_BodyHi[2] and C_BodyHi[1] < C_BodyLo
+        C_MorningStarBullish := true
+
+if C_MorningStarBullish
+    var ttBullishMorningStar = "Teyit seviyesi son barın kapanış fiyatıdır"
+    label.new(bar_index, patternLabelPosLow, text="SABAH YILDIZI", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishMorningStar)
+bgcolor(ta.highest(C_MorningStarBullish?1:0, C_MorningStarBullishNumberOfCandles)!=0 ? color.new(color.blue, 90) : na,title =  'SABAH YILDIZI ',offset=-(C_MorningStarBullishNumberOfCandles-1))
+
+
+pPPPatternLabelPosLow = low - (ta.atr(30) * 0.6)
+patternLabelPosHighHHHHH = high + (ta.atr(30) * 0.6)
+label_color_bullishHHHHH = input(color.blue, "DOJİ SABAH YILDIZI UYARI RENGİ")
+C_MorningDojiStarBullishNumberOfCandles = 3
+C_MorningDojiStarBullish = false
+if C_LongBody[2] and C_IsDojiBody[1] and C_LongBody and C_DownTrend and C_BlackBody[2] and C_BodyHi[1] < C_BodyLo[2] and C_WhiteBody and C_BodyHi >= C_BodyMiddle[2] and C_BodyHi < C_BodyHi[2] and C_BodyHi[1] < C_BodyLo
+	C_MorningDojiStarBullish := true
+
+if C_MorningDojiStarBullish
+    var ttBullishMorningDojiStar = "Teyit seviyesi son barın kapanış fiyatıdır"
+    label.new(bar_index, patternLabelPosLow, text="DOJİ SABAH YILDIZI", style=label.style_label_up, color = label_color_bullish, textcolor=color.white, tooltip = ttBullishMorningDojiStar)
+bgcolor(ta.highest(C_MorningDojiStarBullish?1:0, C_MorningDojiStarBullishNumberOfCandles)!=0 ? color.new(color.blue, 90) : na,title = 'DOJİ SABAH YILDIZI', offset=-(C_MorningDojiStarBullishNumberOfCandles-1))
+
+
+
+
+
+//TARAMA TABLOSU
+screen() =>
+    
+    bull =  C_EngulfingBullish
+    bear = C_InvertedHammerBullish
+    al =   C_HaramiCrossBullish
+    sat = C_HaramiBullish
+    doji = C_DojiStarBullish
+    piercing = C_PiercingBullish
+    hammer =  C_HammerBullish
+    mstar = C_MorningStarBullish
+    mdstar = C_MorningDojiStarBullish
+
+    [bull,bear,al,sat,doji,piercing,hammer,mstar,mdstar]
+
+//========================================================================
+symbol1 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S1")
+symbol2 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S2")
+symbol3 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S3")
+symbol4 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S4")
+symbol5 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S5")
+symbol6 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S6")
+symbol7 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S7")
+symbol8 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S8")
+symbol9 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S9")
+symbol10 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S10")
+symbol11 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S11")
+symbol12 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S12")
+symbol13 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S13")
+symbol14 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S14")
+symbol15 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S15")
+symbol16 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S16")
+symbol17 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S17")
+symbol18 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S18")
+symbol19 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S19")
+symbol20 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S20")
+symbol21 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S21")
+symbol22 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S22")
+symbol23 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S23")
+symbol24 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S24")
+symbol25 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S25")
+symbol26 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S26")
+symbol27 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S27")
+symbol28 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S28")
+symbol29 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S29")
+symbol30 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S30")
+symbol31 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S31")
+symbol32 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S32")
+symbol33 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S33")
+symbol34 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S34")
+symbol35 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S35")
+symbol36 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S36")
+symbol37 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S37")
+symbol38 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S38")
+symbol39 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S39")
+symbol40 = input.symbol(defval = "", title = "Symbol", group = "SCANNER",inline = "S40")
+
+tf = timeframe.period
+//bist100
+s1=(group == "SPECIAL" ? symbol1 : group == "A" ? "BIST:A1CAP" : group == "A-B" ? "BIST:ARCLK" : group == "B-C" ? "BIST:BIGCH" : group == "C-D-E" ? "BIST:CMENT" : group == "E-F" ? "BIST:EDIP" : group == "F-G-H" ? "BIST:FRIGO" : group == "H-I-İ-J-K" ? "BIST:HUNER" : group == "K" ? "BIST:KARTN" : group == "K-L-M" ? "BIST:KTSKR" : group == "M-N-O-Ö" ? "BIST:MNDTR" : group == "P-Q-R" ? "BIST:PAPIL" : group == "S-Ş-T" ? "BIST:SAMAT" : group == "T-U-Ü" ? "BIST:TAVHL" : group == "U-V-Y-Z" ? "BIST:INTEK" : "")
+s2=(group == "SPECIAL" ? symbol2 : group == "A" ? "BIST:ACSEL" : group == "A-B" ? "BIST:ARDYZ" : group == "B-C" ? "BIST:BIMAS" : group == "C-D-E" ? "BIST:CONSE" : group == "E-F" ? "BIST:EGEEN" : group == "F-G-H" ? "BIST:FROTO" : group == "H-I-İ-J-K" ? "BIST:HURGZ" : group == "K" ? "BIST:KARYE" : group == "K-L-M" ? "BIST:KUTPO" : group == "M-N-O-Ö" ? "BIST:MOBTL" : group == "P-Q-R" ? "BIST:PARSN" : group == "S-Ş-T" ? "BIST:SANEL" : group == "T-U-Ü" ? "BIST:TBORG" : group == "U-V-Y-Z" ? "BIST:VAKBN" :"")
+s3=(group == "SPECIAL" ? symbol3 : group == "A" ? "BIST:ADEL" : group == "A-B" ? "BIST:ARENA" : group == "B-C" ? "BIST:BINHO" : group == "C-D-E" ? "BIST:COSMO" : group == "E-F" ? "BIST:EGEPO" : group == "F-G-H" ? "BIST:FZLGY" : group == "H-I-İ-J-K" ? "BIST:ICBCT" : group == "K" ? "BIST:KATMR" : group == "K-L-M" ? "BIST:KUVVA" : group == "M-N-O-Ö" ? "BIST:MOGAN" : group == "P-Q-R" ? "BIST:PASEU" : group == "S-Ş-T" ? "BIST:SANFM" : group == "T-U-Ü" ? "BIST:TCELL" : group == "U-V-Y-Z" ? "BIST:VAKFN" :"")
+s4=(group == "SPECIAL" ? symbol4 : group == "A" ? "BIST:ADESE" : group == "A-B" ? "BIST:ARSAN" : group == "B-C" ? "BIST:BIOEN" : group == "C-D-E" ? "BIST:CRDFA" : group == "E-F" ? "BIST:EGGUB" : group == "F-G-H" ? "BIST:GARAN" : group == "H-I-İ-J-K" ? "BIST:ICUGS" : group == "K" ? "BIST:KAYSE" : group == "K-L-M" ? "BIST:KUYAS" : group == "M-N-O-Ö" ? "BIST:MPARK" : group == "P-Q-R" ? "BIST:PATEK" : group == "S-Ş-T" ? "BIST:SANKO" : group == "T-U-Ü" ? "BIST:TDGYO" : group == "U-V-Y-Z" ? "BIST:VAKKO" :"")
+s5=(group == "SPECIAL" ? symbol5 : group == "A" ? "BIST:ADGYO" : group == "A-B" ? "BIST:ARTMS" : group == "B-C" ? "BIST:BIZIM" : group == "C-D-E" ? "BIST:CRFSA" : group == "E-F" ? "BIST:EGPRO" : group == "F-G-H" ? "BIST:GARFA" : group == "H-I-İ-J-K" ? "BIST:IDGYO" : group == "K" ? "BIST:KBORU" : group == "K-L-M" ? "BIST:KZBGY" : group == "M-N-O-Ö" ? "BIST:MRGYO" : group == "P-Q-R" ? "BIST:PCILT" : group == "S-Ş-T" ? "BIST:SARKY" : group == "T-U-Ü" ? "BIST:TEKTU" : group == "U-V-Y-Z" ? "BIST:VANGD" :"")
+s6=(group == "SPECIAL" ? symbol6 : group == "A" ? "BIST:AEFES" : group == "A-B" ? "BIST:ARZUM" : group == "B-C" ? "BIST:BJKAS" : group == "C-D-E" ? "BIST:CUSAN" : group == "E-F" ? "BIST:EGSER" : group == "F-G-H" ? "BIST:GEDIK" : group == "H-I-İ-J-K" ? "BIST:IEYHO" : group == "K" ? "BIST:KCAER" : group == "K-L-M" ? "BIST:KZGYO" : group == "M-N-O-Ö" ? "BIST:MRSHL" : group == "S-Ş-T" ? "BIST:SASA" : group == "T-U-Ü" ? "BIST:TERA" : group == "U-V-Y-Z" ? "BIST:VBTYZ" :"")
+s7=(group == "SPECIAL" ? symbol7 : group == "A" ? "BIST:AFYON" : group == "A-B" ? "BIST:ASELS" : group == "B-C" ? "BIST:BLCYT" : group == "C-D-E" ? "BIST:CVKMD" : group == "E-F" ? "BIST:EKGYO" : group == "F-G-H" ? "BIST:GEDZA" : group == "H-I-İ-J-K" ? "BIST:IHAAS" : group == "K" ? "BIST:KCHOL" : group == "K-L-M" ? "BIST:LIDER" : group == "M-N-O-Ö" ? "BIST:MSGYO" : group == "P-Q-R" ? "BIST:PEKGY" : group == "S-Ş-T" ? "BIST:SAYAS" : group == "T-U-Ü" ? "BIST:LYDHO" : group == "U-V-Y-Z" ? "BIST:VERTU" :"")
+s8=(group == "SPECIAL" ? symbol8 : group == "A" ? "BIST:AGESA" : group == "A-B" ? "BIST:ASGYO" : group == "B-C" ? "BIST:BMSCH" : group == "C-D-E" ? "BIST:CWENE" : group == "E-F" ? "BIST:EKIZ" : group == "F-G-H" ? "BIST:GENIL" : group == "H-I-İ-J-K" ? "BIST:IHEVA" : group == "K" ? "BIST:KENT" : group == "K-L-M" ? "BIST:LIDFA" : group == "M-N-O-Ö" ? "BIST:MTRKS" : group == "P-Q-R" ? "BIST:PENGD" : group == "S-Ş-T" ? "BIST:SDTTR" : group == "T-U-Ü" ? "BIST:TEZOL" : group == "U-V-Y-Z" ? "BIST:VERUS" :"")
+s9=(group == "SPECIAL" ? symbol9 : group == "A" ? "BIST:AGHOL" : group == "A-B" ? "BIST:ASTOR" : group == "B-C" ? "BIST:BMSTL" : group == "C-D-E" ? "BIST:DAGHL" : group == "E-F" ? "BIST:EKOS" : group == "F-G-H" ? "BIST:GENTS" : group == "H-I-İ-J-K" ? "BIST:IHGZT" : group == "K" ? "BIST:KERVN" : group == "K-L-M" ? "BIST:LINK" : group == "M-N-O-Ö" ? "BIST:MTRYO" : group == "P-Q-R" ? "BIST:PENTA" : group == "S-Ş-T" ? "BIST:SEGYO" : group == "T-U-Ü" ? "BIST:TGSAS" : group == "U-V-Y-Z" ? "BIST:VESBE" :"")
+s10=(group == "SPECIAL" ? symbol10 : group == "A" ? "BIST:AGROT" : group == "A-B" ? "BIST:ASUZU" : group == "B-C" ? "BIST:BNTAS" : group == "C-D-E" ? "BIST:DAGI" : group == "E-F" ? "BIST:EKSUN" : group == "F-G-H" ? "BIST:GEREL" : group == "H-I-İ-J-K" ? "BIST:IHLAS" : group == "K" ? "BIST:KERVT" : group == "K-L-M" ? "BIST:LKMNH" : group == "M-N-O-Ö" ? "BIST:MZHLD" : group == "P-Q-R" ? "BIST:PETKM" : group == "S-Ş-T" ? "BIST:SEKFK" : group == "T-U-Ü" ? "BIST:THYAO" : group == "U-V-Y-Z" ? "BIST:VESTL" :"")
+s11=(group == "SPECIAL" ? symbol11 : group == "A" ? "BIST:AGYO" : group == "A-B" ? "BIST:ATAGY" : group == "B-C" ? "BIST:BOBET" : group == "C-D-E" ? "BIST:DAPGM" : group == "E-F" ? "BIST:ELITE" : group == "F-G-H" ? "BIST:GESAN" : group == "H-I-İ-J-K" ? "BIST:IHLGM" : group == "K" ? "BIST:KFEIN" : group == "K-L-M" ? "BIST:LMKDC" : group == "M-N-O-Ö" ? "BIST:NATEN" : group == "P-Q-R" ? "BIST:PETUN" : group == "S-Ş-T" ? "BIST:SEKUR" : group == "T-U-Ü" ? "BIST:TKFEN" : group == "U-V-Y-Z" ? "BIST:VKFYO" :"")
+s12=(group == "SPECIAL" ? symbol12 : group == "A" ? "BIST:AHGAZ" : group == "A-B" ? "BIST:ATAKP" : group == "B-C" ? "BIST:BORLS" : group == "C-D-E" ? "BIST:DARDL" : group == "E-F" ? "BIST:EMKEL" : group == "F-G-H" ? "BIST:GIPTA" : group == "H-I-İ-J-K" ? "BIST:IHYAY" : group == "K" ? "BIST:KGYO" : group == "K-L-M" ? "BIST:LOGO" : group == "M-N-O-Ö" ? "BIST:NETAS" : group == "P-Q-R" ? "BIST:PGSUS" : group == "S-Ş-T" ? "BIST:SELEC" : group == "T-U-Ü" ? "BIST:TKNSA" : group == "U-V-Y-Z" ? "BIST:VKGYO" :"")
+s13=(group == "SPECIAL" ? symbol13 : group == "A" ? "BIST:AKBNK" : group == "A-B" ? "BIST:ATATP" : group == "B-C" ? "BIST:BORSK" : group == "C-D-E" ? "BIST:DENGE" : group == "E-F" ? "BIST:EMNIS" : group == "F-G-H" ? "BIST:GLBMD" : group == "H-I-İ-J-K" ? "BIST:IMASM" : group == "K" ? "BIST:KIMMR" : group == "K-L-M" ? "BIST:LRSHO" : group == "M-N-O-Ö" ? "BIST:NIBAS" : group == "P-Q-R" ? "BIST:PINSU" : group == "S-Ş-T" ? "BIST:SELGD" : group == "T-U-Ü" ? "BIST:TLMAN" : group == "U-V-Y-Z" ? "BIST:VKING" :"")
+s14=(group == "SPECIAL" ? symbol14 : group == "A" ? "BIST:AKCNS" : group == "A-B" ? "BIST:ATEKS" : group == "B-C" ? "BIST:BOSSA" : group == "C-D-E" ? "BIST:DERHL" : group == "E-F" ? "BIST:ENERY" : group == "F-G-H" ? "BIST:GLCVY" : group == "H-I-İ-J-K" ? "BIST:INDES" : group == "K" ? "BIST:KLGYO" : group == "K-L-M" ? "BIST:LUKSK" : group == "M-N-O-Ö" ? "BIST:NTGAZ" : group == "P-Q-R" ? "BIST:PKART" : group == "S-Ş-T" ? "BIST:SELVA" : group == "T-U-Ü" ? "BIST:TMPOL" : group == "U-V-Y-Z" ? "BIST:VRGYO" :"")
+s15=(group == "SPECIAL" ? symbol15 : group == "A" ? "BIST:AKENR" : group == "A-B" ? "BIST:ATLAS" : group == "B-C" ? "BIST:BRISA" : group == "C-D-E" ? "BIST:DERIM" : group == "E-F" ? "BIST:ENJSA" : group == "F-G-H" ? "BIST:GLRYH" : group == "H-I-İ-J-K" ? "BIST:INFO" : group == "K" ? "BIST:KLKIM" : group == "K-L-M" ? "BIST:MAALT" : group == "M-N-O-Ö" ? "BIST:NTHOL" : group == "P-Q-R" ? "BIST:PKENT" : group == "S-Ş-T" ? "BIST:SEYKM" : group == "T-U-Ü" ? "BIST:TMSN" : group == "U-V-Y-Z" ? "BIST:YAPRK" :"")
+s16=(group == "SPECIAL" ? symbol16 : group == "A" ? "BIST:AKFGY" : group == "A-B" ? "BIST:ATSYH" : group == "B-C" ? "BIST:BRKO" : group == "C-D-E" ? "BIST:DESA" : group == "E-F" ? "BIST:ENKAI" : group == "F-G-H" ? "BIST:GLYHO" : group == "H-I-İ-J-K" ? "BIST:INGRM" : group == "K" ? "BIST:KLMSN" : group == "K-L-M" ? "BIST:MACKO" : group == "M-N-O-Ö" ? "BIST:NUGYO" : group == "P-Q-R" ? "BIST:PLTUR" : group == "S-Ş-T" ? "BIST:SILVR" : group == "T-U-Ü" ? "BIST:TNZTP" : group == "U-V-Y-Z" ? "BIST:YATAS" :"")
+s17=(group == "SPECIAL" ? symbol17 : group == "A" ? "BIST:AKFYE" : group == "A-B" ? "BIST:AVGYO" : group == "B-C" ? "BIST:BRKSN" : group == "C-D-E" ? "BIST:DESPC" : group == "E-F" ? "BIST:ENSRI" : group == "F-G-H" ? "BIST:GMTAS" : group == "H-I-İ-J-K" ? "BIST:INTEM" : group == "K" ? "BIST:KLNMA" : group == "K-L-M" ? "BIST:MAGEN" : group == "M-N-O-Ö" ? "BIST:NUHCM" : group == "P-Q-R" ? "BIST:PNLSN" : group == "S-Ş-T" ? "BIST:SISE" : group == "T-U-Ü" ? "BIST:TOASO" : group == "U-V-Y-Z" ? "BIST:YAYLA" :"")
+s18=(group == "SPECIAL" ? symbol18 : group == "A" ? "BIST:AKGRT" : group == "A-B" ? "BIST:AVHOL" : group == "B-C" ? "BIST:BRKVY" : group == "C-D-E" ? "BIST:DEVA" : group == "E-F" ? "BIST:EPLAS" : group == "F-G-H" ? "BIST:GOKNR" : group == "H-I-İ-J-K" ? "BIST:INVEO" : group == "K" ? "BIST:KLRHO" : group == "K-L-M" ? "BIST:MAKIM" : group == "M-N-O-Ö" ? "BIST:OBAMS" : group == "P-Q-R" ? "BIST:PNSUT" : group == "S-Ş-T" ? "BIST:SKBNK" : group == "T-U-Ü" ? "BIST:TRCAS" : group == "U-V-Y-Z" ? "BIST:YBTAS" :"")
+s19=(group == "SPECIAL" ? symbol19 : group == "A" ? "BIST:AKMGY" : group == "A-B" ? "BIST:AVOD" : group == "B-C" ? "BIST:BRLSM" : group == "C-D-E" ? "BIST:DGATE" : group == "E-F" ? "BIST:ERBOS" : group == "F-G-H" ? "BIST:GOLTS" : group == "H-I-İ-J-K" ? "BIST:INVES" : group == "K" ? "BIST:KLSER" : group == "K-L-M" ? "BIST:MAKTK" : group == "M-N-O-Ö" ? "BIST:OBASE" : group == "P-Q-R" ? "BIST:POLHO" : group == "S-Ş-T" ? "BIST:SKTAS" : group == "T-U-Ü" ? "BIST:TRGYO" : group == "U-V-Y-Z" ? "BIST:YEOTK" :"")
+s20=(group == "SPECIAL" ? symbol20 : group == "A" ? "BIST:AKSA" : group == "A-B" ? "BIST:AVPGY" : group == "B-C" ? "BIST:BRMEN" : group == "C-D-E" ? "BIST:DGGYO" : group == "E-F" ? "BIST:ERCB" : group == "F-G-H" ? "BIST:GOODY" : group == "H-I-İ-J-K" ? "BIST:IPEKE" : group == "K" ? "BIST:KLSYN" : group == "K-L-M" ? "BIST:MANAS" : group == "M-N-O-Ö" ? "BIST:ODAS" : group == "P-Q-R" ? "BIST:POLTK" : group == "S-Ş-T" ? "BIST:SKYLP" : group == "T-U-Ü" ? "BIST:TRILC" : group == "U-V-Y-Z" ? "BIST:YESIL" :"")
+s21=(group == "SPECIAL" ? symbol21 : group == "A" ? "BIST:AKSEN" : group == "A-B" ? "BIST:AVTUR" : group == "B-C" ? "BIST:BRSAN" : group == "C-D-E" ? "BIST:DGNMO" : group == "E-F" ? "BIST:EREGL" : group == "F-G-H" ? "BIST:GOZDE" : group == "H-I-İ-J-K" ? "BIST:ISATR" : group == "K" ? "BIST:KMPUR" : group == "K-L-M" ? "BIST:MARBL" : group == "M-N-O-Ö" ? "BIST:ODINE" : group == "P-Q-R" ? "BIST:PRDGS" : group == "S-Ş-T" ? "BIST:SKYMD" : group == "T-U-Ü" ? "BIST:TSGYO" : group == "U-V-Y-Z" ? "BIST:YGGYO" :"")
+s22=(group == "SPECIAL" ? symbol22 : group == "A" ? "BIST:AKSGY" : group == "A-B" ? "BIST:AYCES" : group == "B-C" ? "BIST:BRYAT" : group == "C-D-E" ? "BIST:DIRIT" : group == "E-F" ? "BIST:ERSU" : group == "F-G-H" ? "BIST:GRNYO" : group == "H-I-İ-J-K" ? "BIST:ISBIR" : group == "K" ? "BIST:KNFRT" : group == "K-L-M" ? "BIST:MARKA" : group == "M-N-O-Ö" ? "BIST:OFSYM" : group == "P-Q-R" ? "BIST:PRKAB" : group == "S-Ş-T" ? "BIST:SMART" : group == "T-U-Ü" ? "BIST:TSKB" : group == "U-V-Y-Z" ? "BIST:YGYO" :"")
+s23=(group == "SPECIAL" ? symbol23 : group == "A" ? "BIST:AKSUE" : group == "A-B" ? "BIST:AYDEM" : group == "B-C" ? "BIST:BSOKE" : group == "C-D-E" ? "BIST:DITAS" : group == "E-F" ? "BIST:ESCAR" : group == "F-G-H" ? "BIST:GRSEL" : group == "H-I-İ-J-K" ? "BIST:ISBTR" : group == "K" ? "BIST:KONKA" : group == "K-L-M" ? "BIST:MARTI" : group == "M-N-O-Ö" ? "BIST:ONCSM" : group == "P-Q-R" ? "BIST:PRKME" : group == "S-Ş-T" ? "BIST:SMRTG" : group == "T-U-Ü" ? "BIST:TSPOR" : group == "U-V-Y-Z" ? "BIST:YKBNK" :"")
+s24=(group == "SPECIAL" ? symbol24 : group == "A" ? "BIST:AKYHO" : group == "A-B" ? "BIST:AYEN" : group == "B-C" ? "BIST:BTCIM" : group == "C-D-E" ? "BIST:DMRGD" : group == "E-F" ? "BIST:ESCOM" : group == "F-G-H" ? "BIST:GRTHO" : group == "H-I-İ-J-K" ? "BIST:ISCTR" : group == "K" ? "BIST:KONTR" : group == "K-L-M" ? "BIST:MAVI" : group == "M-N-O-Ö" ? "BIST:ORCAY" : group == "P-Q-R" ? "BIST:PRZMA" : group == "S-Ş-T" ? "BIST:SNGYO" : group == "T-U-Ü" ? "BIST:TTKOM" :group == "T-U-Ü" ? "BIST:UNLU" : group == "U-V-Y-Z" ? "BIST:YKSLN" :"")
+s25=(group == "SPECIAL" ? symbol25 : group == "A" ? "BIST:ALARK" : group == "A-B" ? "BIST:AYES" : group == "B-C" ? "BIST:BUCIM" : group == "C-D-E" ? "BIST:DMSAS" : group == "E-F" ? "BIST:ESEN" : group == "F-G-H" ? "BIST:GSDDE" : group == "H-I-İ-J-K" ? "BIST:ISDMR" : group == "K" ? "BIST:KONYA" : group == "K-L-M" ? "BIST:MEDTR" : group == "M-N-O-Ö" ? "BIST:ORGE" : group == "P-Q-R" ? "BIST:PSDTC" : group == "S-Ş-T" ? "BIST:SNICA" : group == "T-U-Ü" ? "BIST:TTRAK" : group == "F-G-H" ? "BIST:HUBVC" :group == "U-V-Y-Z" ? "BIST:YONGA" :"")
+s26=(group == "SPECIAL" ? symbol26 : group == "A" ? "BIST:ALBRK" : group == "A-B" ? "BIST:AYGAZ" : group == "B-C" ? "BIST:BURCE" : group == "C-D-E" ? "BIST:DNISI" : group == "E-F" ? "BIST:ETILR" : group == "F-G-H" ? "BIST:GSDHO" : group == "H-I-İ-J-K" ? "BIST:ISFIN" : group == "K" ? "BIST:KOPOL" : group == "K-L-M" ? "BIST:MEGAP" : group == "M-N-O-Ö" ? "BIST:ORMA" : group == "P-Q-R" ? "BIST:PSGYO" : group == "S-Ş-T" ? "BIST:SNKRN" : group == "T-U-Ü" ? "BIST:TUCLK" : group == "S-Ş-T" ? "BIST:TATEN" :group == "U-V-Y-Z" ? "BIST:YUNSA" :"")
+s27=(group == "SPECIAL" ? symbol27 : group == "A" ? "BIST:ALCAR" : group == "A-B" ? "BIST:AZTEK" : group == "B-C" ? "BIST:BURVA" : group == "C-D-E" ? "BIST:DOAS" : group == "E-F" ? "BIST:ETYAT" : group == "F-G-H" ? "BIST:GSRAY" : group == "H-I-İ-J-K" ? "BIST:ISGSY" : group == "K" ? "BIST:KORDS" : group == "K-L-M" ? "BIST:MEGMT" : group == "M-N-O-Ö" ? "BIST:OSMEN" : group == "P-Q-R" ? "" : group == "S-Ş-T" ? "BIST:SNPAM" : group == "T-U-Ü" ? "BIST:TUKAS" :group == "P-Q-R" ? "BIST:SAFKR" : group == "U-V-Y-Z" ? "BIST:YYAPI" :"")
+s28=(group == "SPECIAL" ? symbol28 : group == "A" ? "BIST:ALCTL" : group == "A-B" ? "BIST:BAGFS" : group == "B-C" ? "BIST:BVSAN" : group == "C-D-E" ? "BIST:DOBUR" : group == "E-F" ? "BIST:EUHOL" : group == "F-G-H" ? "BIST:GUBRF" : group == "H-I-İ-J-K" ? "BIST:ISGYO" : group == "K" ? "BIST:KOZAA" : group == "K-L-M" ? "BIST:MEKAG" : group == "M-N-O-Ö" ? "BIST:OSTIM" : group == "P-Q-R" ? "BIST:QNBFK" : group == "S-Ş-T" ? "BIST:SODSN" : group == "T-U-Ü" ? "BIST:TUPRS" :group == "M-N-O-Ö" ? "BIST:PAGYO" : group == "U-V-Y-Z" ? "BIST:YYLGD" :"")
+s29=(group == "SPECIAL" ? symbol29 : group == "A" ? "BIST:ALFAS" : group == "A-B" ? "BIST:BAKAB" : group == "B-C" ? "BIST:BYDNR" : group == "C-D-E" ? "BIST:DOCO" : group == "E-F" ? "BIST:EUKYO" : group == "F-G-H" ? "BIST:GWIND" : group == "H-I-İ-J-K" ? "BIST:ISKPL" : group == "K" ? "BIST:KOZAL" : group == "K-L-M" ? "BIST:MEPET" : group == "M-N-O-Ö" ? "BIST:OTKAR" : group == "P-Q-R" ? "BIST:QUAGR" : group == "S-Ş-T" ? "BIST:SOKE" : group == "T-U-Ü" ? "BIST:TUREX" : group == "K-L-M" ? "BIST:MMCAS" :group == "U-V-Y-Z" ? "BIST:ZEDUR" :"")
+s30=(group == "SPECIAL" ? symbol30 : group == "A" ? "BIST:ALGYO" : group == "A-B" ? "BIST:BALAT" : group == "B-C" ? "BIST:CANTE" : group == "C-D-E" ? "BIST:DOFER" : group == "E-F" ? "BIST:EUPWR" : group == "F-G-H" ? "BIST:GZNMI" : group == "H-I-İ-J-K" ? "BIST:ISKUR" : group == "K" ? "BIST:KRDMA" : group == "K-L-M" ? "BIST:MERCN" : group == "M-N-O-Ö" ? "BIST:OTTO" : group == "P-Q-R" ? "BIST:RALYH" : group == "S-Ş-T" ? "BIST:SOKM" : group == "T-U-Ü" ? "BIST:TURGG" : group == "K" ? "BIST:KSTUR" :group == "U-V-Y-Z" ? "BIST:ZOREN" :"")
+s31=(group == "SPECIAL" ? symbol31 : group == "A" ? "BIST:ALKA" : group == "A-B" ? "BIST:BANVT" : group == "B-C" ? "BIST:CASA" : group == "C-D-E" ? "BIST:DOGUB" : group == "E-F" ? "BIST:EUREN" : group == "F-G-H" ? "BIST:HALKB" : group == "H-I-İ-J-K" ? "BIST:ISMEN" : group == "K" ? "BIST:KRDMB" : group == "K-L-M" ? "BIST:MERIT" : group == "M-N-O-Ö" ? "BIST:OYAKC" : group == "P-Q-R" ? "BIST:RAYSG" : group == "S-Ş-T" ? "BIST:SONME" : group == "T-U-Ü" ? "BIST:TURSG" :group == "B-C" ? "BIST:CLEBI" : group == "U-V-Y-Z" ? "BIST:ZRGYO" :"")
+s32=(group == "SPECIAL" ? symbol32 : group == "A" ? "BIST:ALKIM" : group == "A-B" ? "BIST:BARMA" : group == "B-C" ? "BIST:CATES" : group == "C-D-E" ? "BIST:DOHOL" : group == "E-F" ? "BIST:EUYO" : group == "F-G-H" ? "BIST:HATEK" : group == "H-I-İ-J-K" ? "BIST:ISSEN" : group == "K" ? "BIST:KRDMD" : group == "K-L-M" ? "BIST:MERKO" : group == "M-N-O-Ö" ? "BIST:OYAYO" : group == "P-Q-R" ? "BIST:REEDR" : group == "S-Ş-T" ? "BIST:SRVGY" :group == "S-Ş-T" ? "BIST:TATGD" : group == "H-I-İ-J-K" ? "BIST:KAREL" :group == "T-U-Ü" ? "BIST:UFUK" :"")
+s33=(group == "SPECIAL" ? symbol33 : group == "A" ? "BIST:ALMAD" : group == "A-B" ? "BIST:BASCM" : group == "B-C" ? "BIST:CCOLA" : group == "C-D-E" ? "BIST:DOKTA" : group == "E-F" ? "BIST:EYGYO" : group == "F-G-H" ? "BIST:HATSN" : group == "H-I-İ-J-K" ? "BIST:IZENR" : group == "K" ? "BIST:KRGYO" : group == "K-L-M" ? "BIST:METRO" : group == "M-N-O-Ö" ? "BIST:OYLUM" : group == "P-Q-R" ? "BIST:RNPOL" : group == "S-Ş-T" ? "BIST:SUMAS" : group == "T-U-Ü" ? "BIST:USAK" :group == "F-G-H" ? "BIST:HTTBT" :group == "T-U-Ü" ? "BIST:ULAS" :"")
+s34=(group == "SPECIAL" ? symbol34 : group == "A" ? "BIST:ALTIN" : group == "A-B" ? "BIST:BASGZ" : group == "B-C" ? "BIST:CELHA" : group == "C-D-E" ? "BIST:DURDO" : group == "E-F" ? "BIST:FADE" : group == "F-G-H" ? "BIST:HDFGS" : group == "H-I-İ-J-K" ? "BIST:IZFAS" : group == "K" ? "BIST:KRONT" : group == "K-L-M" ? "BIST:METUR" : group == "M-N-O-Ö" ? "BIST:OYYAT" : group == "P-Q-R" ? "BIST:RODRG" : group == "S-Ş-T" ? "BIST:SUNTK" :group == "P-Q-R" ? "BIST:SAHOL" : group == "E-F" ? "BIST:FORMT" :group == "T-U-Ü" ? "BIST:ULKER" :"")
+s35=(group == "SPECIAL" ? symbol35 : group == "A" ? "BIST:ALVES" : group == "A-B" ? "BIST:BAYRK" : group == "B-C" ? "BIST:CEMAS" : group == "C-D-E" ? "BIST:DYOBY" : group == "E-F" ? "BIST:FENER" : group == "F-G-H" ? "BIST:HEDEF" : group == "H-I-İ-J-K" ? "BIST:IZINV" : group == "K" ? "BIST:KRPLS" : group == "K-L-M" ? "BIST:MGROS" : group == "M-N-O-Ö" ? "BIST:OZGYO" : group == "P-Q-R" ? "BIST:RTALB" : group == "S-Ş-T" ? "BIST:SURGY" : group == "M-N-O-Ö" ? "BIST:PAMEL" :group == "C-D-E" ? "BIST:ECZYT" :group == "T-U-Ü" ? "BIST:ULUFA" :"")
+s36=(group == "SPECIAL" ? symbol36 : group == "A" ? "BIST:ANELE" : group == "A-B" ? "BIST:BEGYO" : group == "B-C" ? "BIST:CEMTS" : group == "C-D-E" ? "BIST:DZGYO" : group == "E-F" ? "BIST:FLAP" : group == "F-G-H" ? "BIST:HEKTS" : group == "H-I-İ-J-K" ? "BIST:IZMDC" : group == "K" ? "BIST:KRSTL" : group == "K-L-M" ? "BIST:MHRGY" : group == "M-N-O-Ö" ? "BIST:OZKGY" : group == "P-Q-R" ? "BIST:RUBNS" : group == "S-Ş-T" ? "BIST:SUWEN" :group == "K-L-M" ? "BIST:MNDRS" :group == "C-D-E" ? "BIST:ECZYT" : group == "T-U-Ü" ? "BIST:ULUSE" :"")
+s37=(group == "SPECIAL" ? symbol37 : group == "A" ? "BIST:ANGEN" : group == "A-B" ? "BIST:BERA" : group == "B-C" ? "BIST:CEOEM" : group == "C-D-E" ? "BIST:EBEBK" : group == "E-F" ? "BIST:FMIZP" : group == "F-G-H" ? "BIST:HKTM" : group == "H-I-İ-J-K" ? "BIST:JANTS" : group == "K" ? "BIST:KRTEK" : group == "K-L-M" ? "BIST:MIATK" : group == "M-N-O-Ö" ? "BIST:OZRDN" : group == "P-Q-R" ? "BIST:RYGYO" : group == "S-Ş-T" ? "BIST:TABGD" : group == "K" ? "BIST:KTLEV" :group == "A-B" ? "BIST:BFREN" : group == "T-U-Ü" ? "BIST:ULUUN" :"")
+s38=(group == "SPECIAL" ? symbol38 : group == "A" ? "BIST:ANHYT" : group == "A-B" ? "BIST:BEYAZ" : group == "B-C" ? "BIST:CIMSA" : group == "C-D-E" ? "BIST:ECILC" : group == "E-F" ? "BIST:FONET" : group == "F-G-H" ? "BIST:HLGYO" : group == "H-I-İ-J-K" ? "BIST:KAPLM" : group == "K" ? "BIST:KRVGD" : group == "K-L-M" ? "BIST:LYDHO" : group == "M-N-O-Ö" ? "BIST:OZSUB" : group == "P-Q-R" ? "BIST:RYSAS" : group == "S-Ş-T" ? "BIST:TARKM" :group == "A" ? "BIST:ANSGR" :group == "H-I-İ-J-K" ? "BIST:KARSN" : group == "T-U-Ü" ? "BIST:UMPAS" :"")
+
+
+    
+[c1,v1,k1,h1,l1,m1,b1,g1,o1] = request.security(s1, tf, screen())
+[c2,v2,k2,h2,l2,m2,b2,g2,o2] = request.security(s2, tf, screen())
+[c3,v3,k3,h3,l3,m3,b3,g3,o3] = request.security(s3, tf, screen())
+[c4,v4,k4,h4,l4,m4,b4,g4,o4] = request.security(s4, tf, screen())
+[c5,v5,k5,h5,l5,m5,b5,g5,o5] = request.security(s5, tf, screen())
+[c6,v6,k6,h6,l6,m6,b6,g6,o6] = request.security(s6, tf, screen())
+[c7,v7,k7,h7,l7,m7,b7,g7,o7] = request.security(s7, tf, screen())
+[c8,v8,k8,h8,l8,m8,b8,g8,o8] = request.security(s8, tf, screen())
+[c9,v9,k9,h9,l9,m9,b9,g9,o9] = request.security(s9, tf, screen())
+[c10,v10,k10,h10,l10,m10,b10,g10,o10] = request.security(s10, tf, screen())
+[c11,v11,k11,h11,l11,m11,b11,g11,o11] = request.security(s11, tf, screen())
+[c12,v12,k12,h12,l12,m12,b12,g12,o12] = request.security(s12, tf, screen())
+[c13,v13,k13,h13,l13,m13,b13,g13,o13] = request.security(s13, tf, screen())
+[c14,v14,k14,h14,l14,m14,b14,g14,o14] = request.security(s14, tf, screen())
+[c15,v15,k15,h15,l15,m15,b15,g15,o15] = request.security(s15, tf, screen())
+[c16,v16,k16,h16,l16,m16,b16,g16,o16] = request.security(s16, tf, screen())
+[c17,v17,k17,h17,l17,m17,b17,g17,o17] = request.security(s17, tf, screen())
+[c18,v18,k18,h18,l18,m18,b18,g18,o18] = request.security(s18, tf, screen())
+[c19,v19,k19,h19,l19,m19,b19,g19,o19] = request.security(s19, tf, screen())
+[c20,v20,k20,h20,l20,m20,b20,g20,o20] = request.security(s20, tf, screen())
+[c21,v21,k21,h21,l21,m21,b21,g21,o21] = request.security(s21, tf, screen())
+[c22,v22,k22,h22,l22,m22,b22,g22,o22] = request.security(s22, tf, screen())
+[c23,v23,k23,h23,l23,m23,b23,g23,o23] = request.security(s23, tf, screen())
+[c24,v24,k24,h24,l24,m24,b24,g24,o24] = request.security(s24, tf, screen())
+[c25,v25,k25,h25,l25,m25,b25,g25,o25] = request.security(s25, tf, screen())
+[c26,v26,k26,h26,l26,m26,b26,g26,o26] = request.security(s26, tf, screen())
+[c27,v27,k27,h27,l27,m27,b27,g27,o27] = request.security(s27, tf, screen())
+[c28,v28,k28,h28,l28,m28,b28,g28,o28] = request.security(s28, tf, screen())
+[c29,v29,k29,h29,l29,m29,b29,g29,o29] = request.security(s29, tf, screen())
+[c30,v30,k30,h30,l30,m30,b30,g30,o30] = request.security(s30, tf, screen())
+[c31,v31,k31,h31,l31,m31,b31,g31,o31] = request.security(s31, tf, screen())
+[c32,v32,k32,h32,l32,m32,b32,g32,o32] = request.security(s32, tf, screen())
+[c33,v33,k33,h33,l33,m33,b33,g33,o33] = request.security(s33, tf, screen())
+[c34,v34,k34,h34,l34,m34,b34,g34,o34] = request.security(s34, tf, screen())
+[c35,v35,k35,h35,l35,m35,b35,g35,o35] = request.security(s35, tf, screen())
+[c36,v36,k36,h36,l36,m36,b36,g36,o36] = request.security(s36, tf, screen())
+[c37,v37,k37,h37,l37,m37,b37,g37,o37] = request.security(s37, tf, screen())
+[c38,v38,k38,h38,l38,m38,b38,g38,o38] = request.security(s38, tf, screen())
+
+
+
+
+
+//========================================================================
+
+buy_label = ' = YUTAN BOĞA=\n'
+buy_label := c1 ? buy_label + str.tostring(s1) + '\n' : buy_label
+buy_label := c2 ? buy_label + str.tostring(s2) + '\n' : buy_label
+buy_label := c3 ? buy_label + str.tostring(s3) + '\n' : buy_label
+buy_label := c4 ? buy_label + str.tostring(s4) + '\n' : buy_label
+buy_label := c5 ? buy_label + str.tostring(s5) + '\n' : buy_label
+buy_label := c6 ? buy_label + str.tostring(s6) + '\n' : buy_label
+buy_label := c7 ? buy_label + str.tostring(s7) + '\n' : buy_label
+buy_label := c8 ? buy_label + str.tostring(s8) + '\n' : buy_label
+buy_label := c9 ? buy_label + str.tostring(s9) + '\n' : buy_label
+buy_label := c10 ? buy_label + str.tostring(s10) + '\n' : buy_label
+buy_label := c11 ? buy_label + str.tostring(s11) + '\n' : buy_label
+buy_label := c12 ? buy_label + str.tostring(s12) + '\n' : buy_label
+buy_label := c13 ? buy_label + str.tostring(s13) + '\n' : buy_label
+buy_label := c14? buy_label + str.tostring(s14) + '\n' : buy_label
+buy_label := c15 ? buy_label + str.tostring(s15) + '\n' : buy_label
+buy_label := c16 ? buy_label + str.tostring(s16) + '\n' : buy_label
+buy_label := c17 ? buy_label + str.tostring(s17) + '\n' : buy_label
+buy_label := c18 ? buy_label + str.tostring(s18) + '\n' : buy_label
+buy_label := c19 ? buy_label + str.tostring(s19) + '\n' : buy_label
+buy_label := c20 ? buy_label + str.tostring(s20) + '\n' : buy_label
+buy_label := c21 ? buy_label + str.tostring(s21) + '\n' : buy_label
+buy_label := c22 ? buy_label + str.tostring(s22) + '\n' : buy_label
+buy_label := c23 ? buy_label + str.tostring(s23) + '\n' : buy_label
+buy_label := c24 ? buy_label + str.tostring(s24) + '\n' : buy_label
+buy_label := c25 ? buy_label + str.tostring(s25) + '\n' : buy_label
+buy_label := c26 ? buy_label + str.tostring(s26) + '\n' : buy_label
+buy_label := c27 ? buy_label + str.tostring(s27) + '\n' : buy_label
+buy_label := c28 ? buy_label + str.tostring(s28) + '\n' : buy_label
+buy_label := c29 ? buy_label + str.tostring(s29) + '\n' : buy_label
+buy_label := c30 ? buy_label + str.tostring(s30) + '\n' : buy_label
+buy_label := c31 ? buy_label + str.tostring(s31) + '\n' : buy_label
+buy_label := c32 ? buy_label + str.tostring(s32) + '\n' : buy_label
+buy_label := c33 ? buy_label + str.tostring(s33) + '\n' : buy_label
+buy_label := c34 ? buy_label + str.tostring(s34) + '\n' : buy_label
+buy_label := c35 ? buy_label + str.tostring(s35) + '\n' : buy_label
+buy_label := c36 ? buy_label + str.tostring(s36) + '\n' : buy_label
+buy_label := c37 ? buy_label + str.tostring(s37) + '\n' : buy_label
+buy_label := c38 ? buy_label + str.tostring(s38) + '\n' : buy_label
+
+//-------------------------------------------------------------------
+//SAT SİNYAL
+shell_label = ' = TERS ÇEKİÇ =\n'
+shell_label := v1 ? shell_label + str.tostring(s1) + '\n' : shell_label
+shell_label := v2 ? shell_label + str.tostring(s2) + '\n' : shell_label
+shell_label := v3 ? shell_label + str.tostring(s3) + '\n' : shell_label
+shell_label := v4 ? shell_label + str.tostring(s4) + '\n' : shell_label
+shell_label := v5 ? shell_label + str.tostring(s5) + '\n' : shell_label
+shell_label := v6 ? shell_label + str.tostring(s6) + '\n' : shell_label
+shell_label := v7 ? shell_label + str.tostring(s7) + '\n' : shell_label
+shell_label:= v8 ? shell_label + str.tostring(s8) + '\n' : shell_label
+shell_label := v9 ? shell_label + str.tostring(s9) + '\n' : shell_label
+shell_label := v10 ? shell_label + str.tostring(s10) + '\n' : shell_label
+shell_label:= v11 ? shell_label + str.tostring(s11) + '\n' : shell_label
+shell_label := v12 ? shell_label + str.tostring(s12) + '\n' : shell_label
+shell_label := v13 ? shell_label + str.tostring(s13) + '\n' : shell_label
+shell_label := v14? shell_label + str.tostring(s14) + '\n' : shell_label
+shell_label:= v15 ? shell_label + str.tostring(s15) + '\n' : shell_label
+shell_label := v16 ? shell_label + str.tostring(s16) + '\n' : shell_label
+shell_label:= v17 ? shell_label + str.tostring(s17) + '\n' : shell_label
+shell_label:= v18 ? shell_label + str.tostring(s18) + '\n' : shell_label
+shell_label := v19 ? shell_label + str.tostring(s19) + '\n' : shell_label
+shell_label:= v20 ? shell_label + str.tostring(s20) + '\n' : shell_label
+shell_label := v21 ? shell_label + str.tostring(s21) + '\n' : shell_label
+shell_label := v22 ? shell_label + str.tostring(s22) + '\n' : shell_label
+shell_label := v23 ? shell_label + str.tostring(s23) + '\n' : shell_label
+shell_label := v24 ? shell_label + str.tostring(s24) + '\n' : shell_label
+shell_label := v25 ? shell_label + str.tostring(s25) + '\n' : shell_label
+shell_label := v26 ? shell_label + str.tostring(s26) + '\n' : shell_label
+shell_label := v27 ? shell_label + str.tostring(s27) + '\n' : shell_label
+shell_label:= v28 ? shell_label + str.tostring(s28) + '\n' : shell_label
+shell_label := v29 ? shell_label + str.tostring(s29) + '\n' : shell_label
+shell_label := v30 ? shell_label + str.tostring(s30) + '\n' : shell_label
+shell_label:= v31 ? shell_label + str.tostring(s31) + '\n' : shell_label
+shell_label := v32 ? shell_label + str.tostring(s32) + '\n' : shell_label
+shell_label := v33 ? shell_label + str.tostring(s33) + '\n' : shell_label
+shell_label := v34? shell_label + str.tostring(s34) + '\n' : shell_label
+shell_label:= v35 ? shell_label + str.tostring(s35) + '\n' : shell_label
+shell_label := v36 ? shell_label + str.tostring(s36) + '\n' : shell_label
+shell_label:= v37 ? shell_label + str.tostring(s37) + '\n' : shell_label
+shell_label:= v38 ? shell_label + str.tostring(s38) + '\n' : shell_label
+
+
+
+al_label = ' = KROS HAMİLE =\n'
+al_label := k1 ? al_label + str.tostring(s1) + '\n' : al_label
+al_label := k2 ? al_label + str.tostring(s2) + '\n' : al_label
+al_label := k3 ? al_label + str.tostring(s3) + '\n' : al_label
+al_label := k4 ? al_label + str.tostring(s4) + '\n' : al_label
+al_label := k5 ? al_label + str.tostring(s5) + '\n' : al_label
+al_label := k6 ? al_label + str.tostring(s6) + '\n' : al_label
+al_label := k7 ? al_label + str.tostring(s7) + '\n' : al_label
+al_label:= k8 ? al_label + str.tostring(s8) + '\n' : al_label
+al_label := k9 ? al_label + str.tostring(s9) + '\n' : al_label
+al_label := k10 ? al_label + str.tostring(s10) + '\n' : al_label
+al_label:= k11 ? al_label + str.tostring(s11) + '\n' : al_label
+al_label := k12 ? al_label + str.tostring(s12) + '\n' : al_label
+al_label := k13 ? al_label + str.tostring(s13) + '\n' : al_label
+al_label := k14? al_label + str.tostring(s14) + '\n' : al_label
+al_label:= k15 ? al_label + str.tostring(s15) + '\n' : al_label
+al_label := k16 ? al_label + str.tostring(s16) + '\n' : al_label
+al_label:= k17 ? al_label + str.tostring(s17) + '\n' : al_label
+al_label:= k18 ? al_label + str.tostring(s18) + '\n' : al_label
+al_label := k19 ? al_label + str.tostring(s19) + '\n' : al_label
+al_label:= k20 ? al_label + str.tostring(s20) + '\n' : al_label
+al_label := k21 ? al_label + str.tostring(s21) + '\n' : al_label
+al_label := k22 ? al_label + str.tostring(s22) + '\n' : al_label
+al_label := k23 ? al_label + str.tostring(s23) + '\n' : al_label
+al_label := k24 ? al_label + str.tostring(s24) + '\n' : al_label
+al_label := k25 ? al_label + str.tostring(s25) + '\n' : al_label
+al_label := k26 ? al_label + str.tostring(s26) + '\n' : al_label
+al_label := k27 ? al_label + str.tostring(s27) + '\n' : al_label
+al_label:= k28 ? al_label + str.tostring(s28) + '\n' : al_label
+al_label := k29 ? al_label + str.tostring(s29) + '\n' : al_label
+al_label := k30 ? al_label + str.tostring(s30) + '\n' : al_label
+al_label:= k31 ? al_label + str.tostring(s31) + '\n' : al_label
+al_label := k32 ? al_label + str.tostring(s32) + '\n' : al_label
+al_label := k33 ? al_label + str.tostring(s33) + '\n' : al_label
+al_label := k34? al_label + str.tostring(s34) + '\n' : al_label
+al_label:= k35 ? al_label + str.tostring(s35) + '\n' : al_label
+al_label := k36 ? al_label + str.tostring(s36) + '\n' : al_label
+al_label:= k37 ? al_label + str.tostring(s37) + '\n' : al_label
+al_label:= k38 ? al_label + str.tostring(s38) + '\n' : al_label
+
+sat_label = ' = HAMİLE =\n'
+sat_label := h1 ? sat_label + str.tostring(s1) + '\n' : sat_label
+sat_label := h2 ? sat_label + str.tostring(s2) + '\n' : sat_label
+sat_label := h3 ? sat_label + str.tostring(s3) + '\n' : sat_label
+sat_label := h4 ? sat_label + str.tostring(s4) + '\n' : sat_label
+sat_label := h5 ? sat_label + str.tostring(s5) + '\n' : sat_label
+sat_label := h6 ? sat_label + str.tostring(s6) + '\n' : sat_label
+sat_label := h7 ? sat_label + str.tostring(s7) + '\n' : sat_label
+sat_label:= h8 ? sat_label + str.tostring(s8) + '\n' : sat_label
+sat_label := h9 ? sat_label + str.tostring(s9) + '\n' : sat_label
+sat_label := h10 ? sat_label + str.tostring(s10) + '\n' : sat_label
+sat_label:= h11 ? sat_label + str.tostring(s11) + '\n' : sat_label
+sat_label := h12 ? sat_label + str.tostring(s12) + '\n' : sat_label
+sat_label := h13 ? sat_label + str.tostring(s13) + '\n' : sat_label
+sat_label := h14? sat_label + str.tostring(s14) + '\n' : sat_label
+sat_label:= h15 ? sat_label + str.tostring(s15) + '\n' : sat_label
+sat_label := h16 ? sat_label + str.tostring(s16) + '\n' : sat_label
+sat_label:= h17 ? sat_label + str.tostring(s17) + '\n' : sat_label
+sat_label:= h18 ? sat_label + str.tostring(s18) + '\n' : sat_label
+sat_label := h19 ? sat_label + str.tostring(s19) + '\n' : sat_label
+sat_label:= h20 ? sat_label + str.tostring(s20) + '\n' : sat_label
+sat_label := h21 ? sat_label + str.tostring(s21) + '\n' : sat_label
+sat_label := h22 ? sat_label + str.tostring(s22) + '\n' : sat_label
+sat_label := h23 ? sat_label + str.tostring(s23) + '\n' : sat_label
+sat_label := h24 ? sat_label + str.tostring(s24) + '\n' : sat_label
+sat_label := h25 ? sat_label + str.tostring(s25) + '\n' : sat_label
+sat_label := h26 ? sat_label + str.tostring(s26) + '\n' : sat_label
+sat_label := h27 ? sat_label + str.tostring(s27) + '\n' : sat_label
+sat_label:= h28 ? sat_label + str.tostring(s28) + '\n' : sat_label
+sat_label := h29 ? sat_label + str.tostring(s29) + '\n' : sat_label
+sat_label := h30 ? sat_label + str.tostring(s30) + '\n' : sat_label
+sat_label:= h31 ? sat_label + str.tostring(s31) + '\n' : sat_label
+sat_label := h32 ? sat_label + str.tostring(s32) + '\n' : sat_label
+sat_label := h33 ? sat_label + str.tostring(s33) + '\n' : sat_label
+sat_label := h34? sat_label + str.tostring(s34) + '\n' : sat_label
+sat_label := h36 ? sat_label + str.tostring(s36) + '\n' : sat_label
+sat_label:= h37 ? sat_label + str.tostring(s37) + '\n' : sat_label
+sat_label:= h38 ? sat_label + str.tostring(s38) + '\n' : sat_label
+
+doji_label = ' = DOJİ =\n'
+doji_label := l1 ? doji_label + str.tostring(s1) + '\n' : doji_label
+doji_label := l2 ? doji_label + str.tostring(s2) + '\n' : doji_label
+doji_label := l3 ? doji_label + str.tostring(s3) + '\n' : doji_label
+doji_label := l4 ? doji_label + str.tostring(s4) + '\n' : doji_label
+doji_label := h5 ? doji_label + str.tostring(s5) + '\n' : doji_label
+doji_label := l6 ? doji_label + str.tostring(s6) + '\n' : doji_label
+doji_label := l7 ? doji_label + str.tostring(s7) + '\n' : doji_label
+doji_label:= l8 ? doji_label + str.tostring(s8) + '\n' : doji_label
+doji_label := l9 ? doji_label + str.tostring(s9) + '\n' : doji_label
+doji_label := l10 ? doji_label + str.tostring(s10) + '\n' : doji_label
+doji_label:= l11 ? doji_label + str.tostring(s11) + '\n' : doji_label
+doji_label := l12 ? doji_label + str.tostring(s12) + '\n' : doji_label
+doji_label := l13 ? doji_label + str.tostring(s13) + '\n' : doji_label
+doji_label:= l14? doji_label + str.tostring(s14) + '\n' : doji_label
+doji_label:= l15 ? doji_label + str.tostring(s15) + '\n' : doji_label
+doji_label := l16 ? doji_label + str.tostring(s16) + '\n' : doji_label
+doji_label:= l17 ? doji_label + str.tostring(s17) + '\n' : doji_label
+doji_label:= l18 ? doji_label + str.tostring(s18) + '\n' : doji_label
+doji_label := l19 ? doji_label + str.tostring(s19) + '\n' : doji_label
+doji_label:= l20 ? doji_label + str.tostring(s20) + '\n' : doji_label
+doji_label := l21 ? doji_label + str.tostring(s21) + '\n' : doji_label
+doji_label := l22 ?doji_label + str.tostring(s22) + '\n' : doji_label
+doji_label := l23 ? doji_label + str.tostring(s23) + '\n' : doji_label
+doji_label := l24 ? doji_label + str.tostring(s24) + '\n' : doji_label
+doji_label:= l25 ? doji_label + str.tostring(s25) + '\n' : doji_label
+doji_label:= l26 ? doji_label + str.tostring(s26) + '\n' : doji_label
+doji_label := l27 ? doji_label + str.tostring(s27) + '\n' : doji_label
+doji_label:= l28 ? doji_label + str.tostring(s28) + '\n' : doji_label
+doji_label:= l29 ? doji_label + str.tostring(s29) + '\n' : doji_label
+doji_label:= l30 ? doji_label + str.tostring(s30) + '\n' : doji_label
+doji_label := l31 ? doji_label + str.tostring(s31) + '\n' : doji_label
+doji_label:= l32 ? doji_label + str.tostring(s32) + '\n' : doji_label
+doji_label := l33 ? doji_label + str.tostring(s33) + '\n' : doji_label
+doji_label:= l34? doji_label + str.tostring(s34) + '\n' : doji_label
+doji_label := l36 ? doji_label + str.tostring(s36) + '\n' : doji_label
+doji_label:= l37 ? doji_label + str.tostring(s37) + '\n' : doji_label
+doji_label:= l38 ? doji_label + str.tostring(s38) + '\n' : doji_label
+
+
+piercing_label = ' = DELEN MUM =\n'
+piercing_label := m1 ? piercing_label + str.tostring(s1) + '\n' : piercing_label
+piercing_label := m2 ? piercing_label + str.tostring(s2) + '\n' : piercing_label
+piercing_label := m3 ? piercing_label + str.tostring(s3) + '\n' : piercing_label
+piercing_label := m4 ? piercing_label + str.tostring(s4) + '\n' : piercing_label
+piercing_label := h5 ? piercing_label + str.tostring(s5) + '\n' : piercing_label
+piercing_label := m6 ? piercing_label + str.tostring(s6) + '\n' : piercing_label
+piercing_label := m7 ? piercing_label + str.tostring(s7) + '\n' : piercing_label
+piercing_label := m8 ? piercing_label + str.tostring(s8) + '\n' : piercing_label
+piercing_label := m9 ? piercing_label + str.tostring(s9) + '\n' : piercing_label
+piercing_label := m10 ? piercing_label + str.tostring(s10) + '\n' : piercing_label
+piercing_label := m11 ? piercing_label + str.tostring(s11) + '\n' : piercing_label
+piercing_label := m12 ? piercing_label + str.tostring(s12) + '\n' : piercing_label
+piercing_label := m13 ? piercing_label + str.tostring(s13) + '\n' : piercing_label
+piercing_label := m14 ? piercing_label + str.tostring(s14) + '\n' : piercing_label
+piercing_label := m15 ? piercing_label + str.tostring(s15) + '\n' : piercing_label
+piercing_label := m16 ? piercing_label + str.tostring(s16) + '\n' : piercing_label
+piercing_label := m17 ? piercing_label + str.tostring(s17) + '\n' : piercing_label
+piercing_label := m18 ? piercing_label + str.tostring(s18) + '\n' : piercing_label
+piercing_label := m19 ? piercing_label + str.tostring(s19) + '\n' : piercing_label
+piercing_label := m20 ? piercing_label + str.tostring(s20) + '\n' : piercing_label
+piercing_label := m21 ? piercing_label + str.tostring(s21) + '\n' : piercing_label
+piercing_label := m22 ? piercing_label + str.tostring(s22) + '\n' : piercing_label
+piercing_label := m23 ? piercing_label + str.tostring(s23) + '\n' : piercing_label
+piercing_label := m24 ? piercing_label + str.tostring(s24) + '\n' : piercing_label
+piercing_label := m25 ? piercing_label + str.tostring(s25) + '\n' : piercing_label
+piercing_label := m26 ? piercing_label + str.tostring(s26) + '\n' : piercing_label
+piercing_label := m27 ? piercing_label + str.tostring(s27) + '\n' : piercing_label
+piercing_label := m28 ? piercing_label + str.tostring(s28) + '\n' : piercing_label
+piercing_label := m29 ? piercing_label + str.tostring(s29) + '\n' : piercing_label
+piercing_label := m30 ? piercing_label + str.tostring(s30) + '\n' : piercing_label
+piercing_label := m31 ? piercing_label + str.tostring(s31) + '\n' : piercing_label
+piercing_label := m32 ? piercing_label + str.tostring(s32) + '\n' : piercing_label
+piercing_label := m33 ? piercing_label + str.tostring(s33) + '\n' : piercing_label
+piercing_label := m34 ? piercing_label + str.tostring(s34) + '\n' : piercing_label
+piercing_label := m36 ? piercing_label + str.tostring(s36) + '\n' : piercing_label
+piercing_label := m37 ? piercing_label + str.tostring(s37) + '\n' : piercing_label
+piercing_label := m38 ? piercing_label + str.tostring(s38) + '\n' : piercing_label
+
+
+
+hammer_label = ' = ÇEKİÇ =\n'
+hammer_label := b1 ? hammer_label + str.tostring(s1) + '\n' : hammer_label
+hammer_label := b2 ? hammer_label + str.tostring(s2) + '\n' : hammer_label
+hammer_label := b3 ? hammer_label + str.tostring(s3) + '\n' : hammer_label
+hammer_label := b4 ? hammer_label + str.tostring(s4) + '\n' : hammer_label
+hammer_label := h5 ? hammer_label + str.tostring(s5) + '\n' : hammer_label
+hammer_label := b6 ? hammer_label + str.tostring(s6) + '\n' : hammer_label
+hammer_label := b7 ? hammer_label + str.tostring(s7) + '\n' : hammer_label
+hammer_label := b8 ? hammer_label + str.tostring(s8) + '\n' : hammer_label
+hammer_label := b9 ? hammer_label + str.tostring(s9) + '\n' : hammer_label
+hammer_label := b10 ? hammer_label + str.tostring(s10) + '\n' : hammer_label
+hammer_label := b11 ? hammer_label + str.tostring(s11) + '\n' : hammer_label
+hammer_label := b12 ? hammer_label + str.tostring(s12) + '\n' : hammer_label
+hammer_label := b13 ? hammer_label + str.tostring(s13) + '\n' : hammer_label
+hammer_label := b14 ? hammer_label + str.tostring(s14) + '\n' : hammer_label
+hammer_label := b15 ? hammer_label + str.tostring(s15) + '\n' : hammer_label
+hammer_label := b16 ? hammer_label + str.tostring(s16) + '\n' : hammer_label
+hammer_label := b17 ? hammer_label + str.tostring(s17) + '\n' : hammer_label
+hammer_label := b18 ? hammer_label + str.tostring(s18) + '\n' : hammer_label
+hammer_label := b19 ? hammer_label + str.tostring(s19) + '\n' : hammer_label
+hammer_label := b20 ? hammer_label + str.tostring(s20) + '\n' : hammer_label
+hammer_label := b21 ? hammer_label + str.tostring(s21) + '\n' : hammer_label
+hammer_label := b22 ? hammer_label + str.tostring(s22) + '\n' : hammer_label
+hammer_label := b23 ? hammer_label + str.tostring(s23) + '\n' : hammer_label
+hammer_label := b24 ? hammer_label + str.tostring(s24) + '\n' : hammer_label
+hammer_label := b25 ? hammer_label + str.tostring(s25) + '\n' : hammer_label
+hammer_label := b26 ? hammer_label + str.tostring(s26) + '\n' : hammer_label
+hammer_label := b27 ? hammer_label + str.tostring(s27) + '\n' : hammer_label
+hammer_label := b28 ? hammer_label + str.tostring(s28) + '\n' : hammer_label
+hammer_label := b29 ? hammer_label + str.tostring(s29) + '\n' : hammer_label
+hammer_label := b30 ? hammer_label + str.tostring(s30) + '\n' : hammer_label
+hammer_label := b31 ? hammer_label + str.tostring(s31) + '\n' : hammer_label
+hammer_label := b32 ? hammer_label + str.tostring(s32) + '\n' : hammer_label
+hammer_label := b33 ? hammer_label + str.tostring(s33) + '\n' : hammer_label
+hammer_label := b34 ? hammer_label + str.tostring(s34) + '\n' : hammer_label
+hammer_label := b36 ? hammer_label + str.tostring(s36) + '\n' : hammer_label
+hammer_label := b37 ? hammer_label + str.tostring(s37) + '\n' : hammer_label
+hammer_label := b38 ? hammer_label + str.tostring(s38) + '\n' : hammer_label
+
+
+
+mstar_label = ' = SABAH YILDIZI =\n'
+mstar_label := g1 ? mstar_label + str.tostring(s1) + '\n' : mstar_label
+mstar_label := g2 ? mstar_label + str.tostring(s2) + '\n' : mstar_label
+mstar_label := g3 ? mstar_label + str.tostring(s3) + '\n' : mstar_label
+mstar_label := g4 ? mstar_label + str.tostring(s4) + '\n' : mstar_label
+mstar_label := h5 ? mstar_label + str.tostring(s5) + '\n' : mstar_label
+mstar_label := g6 ? mstar_label + str.tostring(s6) + '\n' : mstar_label
+mstar_label := g7 ? mstar_label + str.tostring(s7) + '\n' : mstar_label
+mstar_label := g8 ? mstar_label + str.tostring(s8) + '\n' : mstar_label
+mstar_label := g9 ? mstar_label + str.tostring(s9) + '\n' : mstar_label
+mstar_label := g10 ? mstar_label + str.tostring(s10) + '\n' : mstar_label
+mstar_label := g11 ? mstar_label + str.tostring(s11) + '\n' : mstar_label
+mstar_label := g12 ? mstar_label + str.tostring(s12) + '\n' : mstar_label
+mstar_label := g13 ? mstar_label + str.tostring(s13) + '\n' : mstar_label
+mstar_label := g14 ? mstar_label + str.tostring(s14) + '\n' : mstar_label
+mstar_label := g15 ? mstar_label + str.tostring(s15) + '\n' : mstar_label
+mstar_label := g16 ? mstar_label + str.tostring(s16) + '\n' : mstar_label
+mstar_label := g17 ? mstar_label + str.tostring(s17) + '\n' : mstar_label
+mstar_label := g18 ? mstar_label + str.tostring(s18) + '\n' : mstar_label
+mstar_label := g19 ? mstar_label + str.tostring(s19) + '\n' : mstar_label
+mstar_label := g20 ? mstar_label + str.tostring(s20) + '\n' : mstar_label
+mstar_label := g21 ? mstar_label + str.tostring(s21) + '\n' : mstar_label
+mstar_label := g22 ? mstar_label + str.tostring(s22) + '\n' : mstar_label
+mstar_label := g23 ? mstar_label + str.tostring(s23) + '\n' : mstar_label
+mstar_label := g24 ? mstar_label + str.tostring(s24) + '\n' : mstar_label
+mstar_label := g25 ? mstar_label + str.tostring(s25) + '\n' : mstar_label
+mstar_label := g26 ? mstar_label + str.tostring(s26) + '\n' : mstar_label
+mstar_label := g27 ? mstar_label + str.tostring(s27) + '\n' : mstar_label
+mstar_label := g28 ? mstar_label + str.tostring(s28) + '\n' : mstar_label
+mstar_label := g29 ? mstar_label + str.tostring(s29) + '\n' : mstar_label
+mstar_label := g30 ? mstar_label + str.tostring(s30) + '\n' : mstar_label
+mstar_label := g31 ? mstar_label + str.tostring(s31) + '\n' : mstar_label
+mstar_label := g32 ? mstar_label + str.tostring(s32) + '\n' : mstar_label
+mstar_label := g33 ? mstar_label + str.tostring(s33) + '\n' : mstar_label
+mstar_label := g34 ? mstar_label + str.tostring(s34) + '\n' : mstar_label
+mstar_label := g36 ? mstar_label + str.tostring(s36) + '\n' : mstar_label
+mstar_label := g37 ? mstar_label + str.tostring(s37) + '\n' : mstar_label
+mstar_label := g38 ? mstar_label + str.tostring(s38) + '\n' : mstar_label
+
+
+
+
+mdstar_label = ' = DOJİ SABAH YILDIZI =\n' 
+mdstar_label := o1 ? mdstar_label + str.tostring(s1) + '\n' : mdstar_label
+mdstar_label := o2 ? mdstar_label + str.tostring(s2) + '\n' : mdstar_label
+mdstar_label := o3 ? mdstar_label + str.tostring(s3) + '\n' : mdstar_label
+mdstar_label := o4 ? mdstar_label + str.tostring(s4) + '\n' : mdstar_label
+mdstar_label := o5 ? mdstar_label + str.tostring(s5) + '\n' : mdstar_label
+mdstar_label := o6 ? mdstar_label + str.tostring(s6) + '\n' : mdstar_label
+mdstar_label := o7 ? mdstar_label + str.tostring(s7) + '\n' : mdstar_label
+mdstar_label := o8 ? mdstar_label + str.tostring(s8) + '\n' : mdstar_label
+mdstar_label := o9 ? mdstar_label + str.tostring(s9) + '\n' : mdstar_label
+mdstar_label := o10 ? mdstar_label + str.tostring(s10) + '\n' : mdstar_label
+mdstar_label := o11 ? mdstar_label + str.tostring(s11) + '\n' : mdstar_label
+mdstar_label := o12 ? mdstar_label + str.tostring(s12) + '\n' : mdstar_label
+mdstar_label := o13 ? mdstar_label + str.tostring(s13) + '\n' : mdstar_label
+mdstar_label := o14 ? mdstar_label + str.tostring(s14) + '\n' : mdstar_label
+mdstar_label := o15 ? mdstar_label + str.tostring(s15) + '\n' : mdstar_label
+mdstar_label := o16 ? mdstar_label + str.tostring(s16) + '\n' : mdstar_label
+mdstar_label := o17 ? mdstar_label + str.tostring(s17) + '\n' : mdstar_label
+mdstar_label := o18 ? mdstar_label + str.tostring(s18) + '\n' : mdstar_label
+mdstar_label := o19 ? mdstar_label + str.tostring(s19) + '\n' : mdstar_label
+mdstar_label := o20 ? mdstar_label + str.tostring(s20) + '\n' : mdstar_label
+mdstar_label := o21 ? mdstar_label + str.tostring(s21) + '\n' : mdstar_label
+mdstar_label := o22 ? mdstar_label + str.tostring(s22) + '\n' : mdstar_label
+mdstar_label := o23 ? mdstar_label + str.tostring(s23) + '\n' : mdstar_label
+mdstar_label := o24 ? mdstar_label + str.tostring(s24) + '\n' : mdstar_label
+mdstar_label := o25 ? mdstar_label + str.tostring(s25) + '\n' : mdstar_label
+mdstar_label := o26 ? mdstar_label + str.tostring(s26) + '\n' : mdstar_label
+mdstar_label := o27 ? mdstar_label + str.tostring(s27) + '\n' : mdstar_label
+mdstar_label := o28 ? mdstar_label + str.tostring(s28) + '\n' : mdstar_label
+mdstar_label := o29 ? mdstar_label + str.tostring(s29) + '\n' : mdstar_label
+mdstar_label := o30 ? mdstar_label + str.tostring(s30) + '\n' : mdstar_label
+mdstar_label := o31 ? mdstar_label + str.tostring(s31) + '\n' : mdstar_label
+mdstar_label := o32 ? mdstar_label + str.tostring(s32) + '\n' : mdstar_label
+mdstar_label := o33 ? mdstar_label + str.tostring(s33) + '\n' : mdstar_label
+mdstar_label := o34 ? mdstar_label + str.tostring(s34) + '\n' : mdstar_label
+mdstar_label := o36 ? mdstar_label + str.tostring(s36) + '\n' : mdstar_label
+mdstar_label := o37 ? mdstar_label + str.tostring(s37) + '\n' : mdstar_label
+mdstar_label := o38 ? mdstar_label + str.tostring(s38) + '\n' : mdstar_label
+
+
+
+
+
+
+lab_buy =label.new(bar_index+30, close, buy_label, color=color.new(color.blue,70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_buy[1])
+
+
+lab_shell=label.new(bar_index+50, close, shell_label, color=color.new(color.lime,70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_shell[1])
+
+lab_al=label.new(bar_index+70, close, al_label, color=color.new(color.gray,70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_al[1])
+
+lab_sat=label.new(bar_index+90, close, sat_label, color=color.new(color.white,70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_sat[1])
+
+
+lab_doji=label.new(bar_index+110, close, doji_label, color=color.new(#a71c1c, 70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_doji[1])
+
+lab_piercing=label.new(bar_index+130, close, piercing_label, color=color.new(#063605, 70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_piercing[1])
+
+lab_hammer=label.new(bar_index+150, close, hammer_label, color=color.new(#293eb6, 70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_hammer[1])
+
+lab_mstar=label.new(bar_index+170, close, mstar_label, color=color.new(#2a48f0, 0), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_mstar[1])
+
+lab_mdstar=label.new(bar_index+190, close, mdstar_label, color=color.new(#d36821, 70), textcolor=color.white, style=label.style_label_up, yloc=yloc.price,textalign=text.align_left)
+label.delete(lab_mdstar[1])
+
+
