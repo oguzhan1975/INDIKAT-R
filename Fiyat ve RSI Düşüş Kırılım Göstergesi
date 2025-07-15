@@ -1,0 +1,845 @@
+//@version=5
+indicator("Fiyat ve RSI Düşüş Kırılım Göstergesi", shorttitle="Fiyat ve RSI Düşüş Kırılım", overlay=true)
+
+
+
+// 1. KULLANICI AYARLARI
+rsiLength = input.int(14, "RSI Periyodu", minval=1)
+oversoldLevel = input.int(30, "Aşırı Satım Seviyesi", minval=0, maxval=50)
+priceLookback = input.int(20, "Fiyat Düşüş Periyodu", minval=5)
+rsiLookback = input.int(5, "RSI Düşüş Periyodu", minval=3)
+
+// Etiket kontrolleri 
+showCombined = input(true, "✔ Kombine Kırılım Etiketi", group="Etiket Ayarları")
+showPrice = input(true, "✔ Fiyat Kırılımı Etiketi", group="Etiket Ayarları")
+showRSI = input(true, "✔ RSI Kırılımı Etiketi", group="Etiket Ayarları")
+
+// 2. GÖSTERGE HESAPLAMALARI
+rsi = ta.rsi(close, rsiLength)
+
+priceCondition = (ta.lowest(low, priceLookback) == low[1]) and (close > close[1])
+rsiCondition = (ta.lowest(rsi, rsiLookback) == rsi[1]) and (rsi > rsi[1]) and (rsi[1] < oversoldLevel)
+
+// 3. SİNYAL TESPİTİ
+combinedSignal = priceCondition and rsiCondition
+
+// 4. GÖRSELLEŞTİRME 
+var table etiketTablosu = table.new(position.top_right, 1, 1)
+
+// Kombine Etiket
+if showCombined and combinedSignal
+    label.new(         bar_index,          na,         text = "↑ Kombine Kırılım ↑\nFiyat: " + str.tostring(low[1], "#.##") +                "\nRSI: " + str.tostring(rsi[1], "#.#"),         color = color.new(color.green, 70),         textcolor = color.white,         style = label.style_label_up,         yloc = yloc.belowbar    )
+
+// Fiyat Etiketi
+if showPrice and priceCondition and not rsiCondition
+    label.new(         bar_index,         na,         text = "Fiyat Kırılımı\n" + str.tostring(low[1], "#.##"),         color = color.new(color.blue, 70),         textcolor = color.white,         style = label.style_label_up,         yloc = yloc.belowbar    )
+
+// RSI Etiketi
+if showRSI and rsiCondition and not priceCondition
+    label.new(         bar_index,         na,         text = "RSI Kırılımı\n" + str.tostring(rsi[1], "#.#"),         color = color.new(color.orange, 70),         textcolor = color.white,         style = label.style_label_up,         yloc = yloc.belowbar    )
+
+// 5. ŞEKİLLER (Görsel referans için)
+plotshape(series=combinedSignal, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(series=priceCondition and not rsiCondition, style=shape.triangleup, location=location.belowbar, color=color.blue, size=size.small)
+plotshape(series=rsiCondition and not priceCondition, style=shape.triangleup, location=location.belowbar, color=color.orange, size=size.small)
+
+// Alarmlar
+alertcondition(combinedSignal, title="Kombine Düşüş Kırılımı", message="Kombine düşüş kırılım sinyali")
+alertcondition(priceCondition, title="Fiyat Düşüş Kırılımı", message="Fiyat düşüş kırılım sinyali")
+alertcondition(rsiCondition, title="RSI Düşüş Kırılımı", message="RSI düşüş kırılım sinyali")
+
+gurupSec = input.string(defval='1', options=['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'], group='Taraması yapılacak 40\'lı gruplardan birini seçin', title='Grup seç')
+per = input.timeframe(defval='', title='PERİYOT', group="Tarama yapmak istediğiniz periyotu seçin")
+loc = input.int(defval=20, title='Konum Ayarı', minval=-100, maxval=200, step=5, group='Tablonun konumunu belirleyin')
+
+
+func() =>
+    
+    value = (close)
+    cond = combinedSignal or rsiCondition
+    [value, cond]
+
+// ======= GROUP 1 =======
+g1_01 = input.symbol(title='01', defval='BIST:BRYAT', group="1. Grup Hisseleri")
+g1_02 = input.symbol(title='02', defval='BIST:TARKM')
+g1_03 = input.symbol(title='03', defval='BIST:TNZTP')
+g1_04 = input.symbol(title='04', defval='BIST:ERBOS')
+g1_05 = input.symbol(title='05', defval='BIST:BFREN')
+g1_06 = input.symbol(title='06', defval='BIST:ALARK')
+g1_07 = input.symbol(title='07', defval='BIST:ISMEN')
+g1_08 = input.symbol(title='08', defval='BIST:CVKMD')
+g1_09 = input.symbol(title='09', defval='BIST:TTRAK')
+g1_10 = input.symbol(title='10', defval='BIST:ASELS')
+g1_11 = input.symbol(title='11', defval='BIST:ATAKP')
+g1_12 = input.symbol(title='12', defval='BIST:MGROS')
+g1_13 = input.symbol(title='13', defval='BIST:BRSAN')
+g1_14 = input.symbol(title='14', defval='BIST:ALFAS')
+g1_15 = input.symbol(title='15', defval='BIST:CWENE')
+g1_16 = input.symbol(title='16', defval='BIST:THYAO')
+g1_17 = input.symbol(title='17', defval='BIST:EREGL')
+g1_18 = input.symbol(title='18', defval='BIST:TUPRS')
+g1_19 = input.symbol(title='19', defval='BIST:YYLGD')
+g1_20 = input.symbol(title='20', defval='BIST:KLSER')
+g1_21 = input.symbol(title='21', defval='BIST:MIATK')
+g1_22 = input.symbol(title='22', defval='BIST:ASTOR')
+g1_23 = input.symbol(title='23', defval='BIST:DOAS')
+g1_24 = input.symbol(title='24', defval='BIST:ERCB')
+g1_25 = input.symbol(title='25', defval='BIST:REEDR')
+g1_26 = input.symbol(title='26', defval='BIST:DNISI')
+g1_27 = input.symbol(title='27', defval='BIST:ARZUM')
+g1_28 = input.symbol(title='28', defval='BIST:EBEBK')
+g1_29 = input.symbol(title='29', defval='BIST:KLKIM')
+g1_30 = input.symbol(title='30', defval='BIST:ONCSM')
+g1_31 = input.symbol(title='31', defval='BIST:SOKE')
+g1_32 = input.symbol(title='32', defval='BIST:GUBRF')
+g1_33 = input.symbol(title='33', defval='BIST:KONTR')
+g1_34 = input.symbol(title='34', defval='BIST:DAPGM')
+g1_35 = input.symbol(title='35', defval='BIST:BVSAN')
+g1_36 = input.symbol(title='36', defval='BIST:ODAS')
+g1_37 = input.symbol(title='37', defval='BIST:OYAKC')
+g1_38 = input.symbol(title='38', defval='BIST:KRPLS')
+g1_39 = input.symbol(title='39', defval='BIST:BOBET')
+g1_40 = input.symbol(title='40', defval='BIST:AKBNK')
+
+// ======= GROUP 2 =======
+g2_01 = input.symbol(title='01', defval='BIST:BURCE', group="2. Grup Hisseleri")
+g2_02 = input.symbol(title='02', defval='BIST:BURVA')
+g2_03 = input.symbol(title='03', defval='BIST:BUCIM')
+g2_04 = input.symbol(title='04', defval='BIST:CANTE')
+g2_05 = input.symbol(title='05', defval='BIST:CLEBI')
+g2_06 = input.symbol(title='06', defval='BIST:CELHA')
+g2_07 = input.symbol(title='07', defval='BIST:CEMAS')
+g2_08 = input.symbol(title='08', defval='BIST:CEMTS')
+g2_09 = input.symbol(title='09', defval='BIST:CMBTN')
+g2_10 = input.symbol(title='10', defval='BIST:CIMSA')
+g2_11 = input.symbol(title='11', defval='BIST:CONSE')
+g2_12 = input.symbol(title='12', defval='BIST:COSMO')
+g2_13 = input.symbol(title='13', defval='BIST:CVKMD')
+g2_14 = input.symbol(title='14', defval='BIST:CWENE')
+g2_15 = input.symbol(title='15', defval='BIST:DAPGM')
+g2_16 = input.symbol(title='16', defval='BIST:DARDL')
+g2_17 = input.symbol(title='17', defval='BIST:DGATE')
+g2_18 = input.symbol(title='18', defval='BIST:DESA')
+g2_19 = input.symbol(title='19', defval='BIST:DESPC')
+g2_20 = input.symbol(title='20', defval='BIST:DNISI')
+g2_21 = input.symbol(title='21', defval='BIST:DITAS')
+g2_22 = input.symbol(title='22', defval='BIST:DGNMO')
+g2_23 = input.symbol(title='23', defval='BIST:ARASE')
+g2_24 = input.symbol(title='24', defval='BIST:DGGYO')
+g2_25 = input.symbol(title='25', defval='BIST:DOAS')
+g2_26 = input.symbol(title='26', defval='BIST:DOGUB')
+g2_27 = input.symbol(title='27', defval='BIST:DYOBY')
+g2_28 = input.symbol(title='28', defval='BIST:EDATA')
+g2_29 = input.symbol(title='29', defval='BIST:EGEEN')
+g2_30 = input.symbol(title='30', defval='BIST:EGGUB')
+g2_31 = input.symbol(title='31', defval='BIST:EGPRO')
+g2_32 = input.symbol(title='32', defval='BIST:EKSUN')
+g2_33 = input.symbol(title='33', defval='BIST:ELITE')
+g2_34 = input.symbol(title='34', defval='BIST:ENJSA')
+g2_35 = input.symbol(title='35', defval='BIST:ERCB')
+g2_36 = input.symbol(title='36', defval='BIST:EREGL')
+g2_37 = input.symbol(title='37', defval='BIST:ERSU')
+g2_38 = input.symbol(title='38', defval='BIST:ESCOM')
+g2_39 = input.symbol(title='39', defval='BIST:TEZOL')
+g2_40 = input.symbol(title='40', defval='BIST:GARAN')
+
+// ======= GROUP 3 =======
+g3_01 = input.symbol(title='01', defval='BIST:MNDTR', group="3. Grup Hisseleri")
+g3_02 = input.symbol(title='02', defval='BIST:EGEPO')
+g3_03 = input.symbol(title='03', defval='BIST:NTGAZ')
+g3_04 = input.symbol(title='04', defval='BIST:NETAS')
+g3_05 = input.symbol(title='05', defval='BIST:NIBAS')
+g3_06 = input.symbol(title='06', defval='BIST:NUHCM')
+g3_07 = input.symbol(title='07', defval='BIST:NUGYO')
+g3_08 = input.symbol(title='08', defval='BIST:ODAS')
+g3_09 = input.symbol(title='09', defval='BIST:ONCSM')
+g3_10 = input.symbol(title='10', defval='BIST:ORGE')
+g3_11 = input.symbol(title='11', defval='BIST:OSTIM')
+g3_12 = input.symbol(title='12', defval='BIST:OTKAR')
+g3_13 = input.symbol(title='13', defval='BIST:OYAKC')
+g3_14 = input.symbol(title='14', defval='BIST:OYLUM')
+g3_15 = input.symbol(title='15', defval='BIST:OZGYO')
+g3_16 = input.symbol(title='16', defval='BIST:OZRDN')
+g3_17 = input.symbol(title='17', defval='BIST:OZSUB')
+g3_18 = input.symbol(title='18', defval='BIST:PNLSN')
+g3_19 = input.symbol(title='19', defval='BIST:PAGYO')
+g3_20 = input.symbol(title='20', defval='BIST:PRDGS')
+g3_21 = input.symbol(title='21', defval='BIST:PASEU')
+g3_22 = input.symbol(title='22', defval='BIST:PSGYO')
+g3_23 = input.symbol(title='23', defval='BIST:PCILT')
+g3_24 = input.symbol(title='24', defval='BIST:PGSUS')
+g3_25 = input.symbol(title='25', defval='BIST:PEKGY')
+g3_26 = input.symbol(title='26', defval='BIST:PENGD')
+g3_27 = input.symbol(title='27', defval='BIST:PENTA')
+g3_28 = input.symbol(title='28', defval='BIST:PETUN')
+g3_29 = input.symbol(title='29', defval='BIST:PNSUT')
+g3_30 = input.symbol(title='30', defval='BIST:PKART')
+g3_31 = input.symbol(title='31', defval='BIST:PLTUR')
+g3_32 = input.symbol(title='32', defval='BIST:POLHO')
+g3_33 = input.symbol(title='33', defval='BIST:POLTK')
+g3_34 = input.symbol(title='34', defval='BIST:RNPOL')
+g3_35 = input.symbol(title='35', defval='BIST:RALYH')
+g3_36 = input.symbol(title='36', defval='BIST:ICUGS')
+g3_37 = input.symbol(title='37', defval='BIST:RODRG')
+g3_38 = input.symbol(title='38', defval='BIST:RUBNS')
+g3_39 = input.symbol(title='39', defval='BIST:SAFKR')
+g3_40 = input.symbol(title='40', defval='BIST:ISCTR')
+
+// ======= GROUP 4 =======
+g4_01 = input.symbol(title='01', defval='BIST:VERUS', group="4. Grup Hisseleri")
+g4_02 = input.symbol(title='02', defval='BIST:VERTU')
+g4_03 = input.symbol(title='03', defval='BIST:VESBE')
+g4_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g4_05 = input.symbol(title='05', defval='BIST:YATAS')
+g4_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g4_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g4_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g4_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g4_10 = input.symbol(title='10', defval='BIST:XU100')
+g4_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g4_12 = input.symbol(title='12', defval='BIST:VESTL')
+g4_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g4_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g4_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g4_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g4_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g4_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g4_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g4_20 = input.symbol(title='20', defval='BIST:ADEL')
+g4_21 = input.symbol(title='21', defval='BIST:ADESE')
+g4_22 = input.symbol(title='22', defval='BIST:AFYON')
+g4_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g4_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g4_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g4_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g4_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g4_28 = input.symbol(title='28', defval='BIST:AKSA')
+g4_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g4_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g4_31 = input.symbol(title='31', defval='BIST:ALARK')
+g4_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g4_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g4_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g4_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g4_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g4_37 = input.symbol(title='37', defval='BIST:ALKA')
+g4_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g4_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g4_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 5 =======
+g5_01 = input.symbol(title='01', defval='BIST:VERUS', group="5. Grup Hisseleri")
+g5_02 = input.symbol(title='02', defval='BIST:VERTU')
+g5_03 = input.symbol(title='03', defval='BIST:VESBE')
+g5_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g5_05 = input.symbol(title='05', defval='BIST:YATAS')
+g5_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g5_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g5_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g5_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g5_10 = input.symbol(title='10', defval='BIST:XU100')
+g5_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g5_12 = input.symbol(title='12', defval='BIST:VESTL')
+g5_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g5_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g5_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g5_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g5_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g5_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g5_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g5_20 = input.symbol(title='20', defval='BIST:ADEL')
+g5_21 = input.symbol(title='21', defval='BIST:ADESE')
+g5_22 = input.symbol(title='22', defval='BIST:AFYON')
+g5_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g5_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g5_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g5_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g5_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g5_28 = input.symbol(title='28', defval='BIST:AKSA')
+g5_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g5_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g5_31 = input.symbol(title='31', defval='BIST:ALARK')
+g5_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g5_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g5_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g5_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g5_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g5_37 = input.symbol(title='37', defval='BIST:ALKA')
+g5_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g5_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g5_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 6 =======
+
+g6_01 = input.symbol(title='01', defval='BIST:VERUS', group="6. Grup Hisseleri")
+g6_02 = input.symbol(title='02', defval='BIST:VERTU')
+g6_03 = input.symbol(title='03', defval='BIST:VESBE')
+g6_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g6_05 = input.symbol(title='05', defval='BIST:YATAS')
+g6_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g6_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g6_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g6_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g6_10 = input.symbol(title='10', defval='BIST:XU100')
+g6_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g6_12 = input.symbol(title='12', defval='BIST:VESTL')
+g6_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g6_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g6_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g6_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g6_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g6_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g6_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g6_20 = input.symbol(title='20', defval='BIST:ADEL')
+g6_21 = input.symbol(title='21', defval='BIST:ADESE')
+g6_22 = input.symbol(title='22', defval='BIST:AFYON')
+g6_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g6_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g6_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g6_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g6_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g6_28 = input.symbol(title='28', defval='BIST:AKSA')
+g6_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g6_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g6_31 = input.symbol(title='31', defval='BIST:ALARK')
+g6_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g6_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g6_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g6_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g6_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g6_37 = input.symbol(title='37', defval='BIST:ALKA')
+g6_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g6_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g6_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 7 =======					
+g7_01 = input.symbol(title='01', defval='BIST:VERUS', group="7. Grup Hisseleri")					
+g7_02 = input.symbol(title='02', defval='BIST:VERTU')					
+g7_03 = input.symbol(title='03', defval='BIST:VESBE')					
+g7_04 = input.symbol(title='04', defval='BIST:YAPRK')					
+g7_05 = input.symbol(title='05', defval='BIST:YATAS')					
+g7_06 = input.symbol(title='06', defval='BIST:YYLGD')					
+g7_07 = input.symbol(title='07', defval='BIST:YEOTK')					
+g7_08 = input.symbol(title='08', defval='BIST:YUNSA')					
+g7_09 = input.symbol(title='09', defval='BIST:ZEDUR')					
+g7_10 = input.symbol(title='10', defval='BIST:XU100')					
+g7_11 = input.symbol(title='11', defval='BIST:VAKBN')					
+g7_12 = input.symbol(title='12', defval='BIST:VESTL')					
+g7_13 = input.symbol(title='13', defval='BIST:VKGYO')					
+g7_14 = input.symbol(title='14', defval='BIST:YKBNK')					
+g7_15 = input.symbol(title='15', defval='BIST:YGGYO')					
+g7_16 = input.symbol(title='16', defval='BIST:YYAPI')					
+g7_17 = input.symbol(title='17', defval='BIST:ZOREN')					
+g7_18 = input.symbol(title='18', defval='BIST:ZRGYO')					
+g7_19 = input.symbol(title='19', defval='BIST:ACSEL')					
+g7_20 = input.symbol(title='20', defval='BIST:ADEL')					
+g7_21 = input.symbol(title='21', defval='BIST:ADESE')					
+g7_22 = input.symbol(title='22', defval='BIST:AFYON')					
+g7_23 = input.symbol(title='23', defval='BIST:AGHOL')					
+g7_24 = input.symbol(title='24', defval='BIST:AKCNS')					
+g7_25 = input.symbol(title='25', defval='BIST:AKFGY')					
+g7_26 = input.symbol(title='26', defval='BIST:AKGRT')					
+g7_27 = input.symbol(title='27', defval='BIST:AKMGY')					
+g7_28 = input.symbol(title='28', defval='BIST:AKSA')					
+g7_29 = input.symbol(title='29', defval='BIST:AKSEN')					
+g7_30 = input.symbol(title='30', defval='BIST:AKSGY')					
+g7_31 = input.symbol(title='31', defval='BIST:ALARK')					
+g7_32 = input.symbol(title='32', defval='BIST:ALBRK')					
+g7_33 = input.symbol(title='33', defval='BIST:ALCAR')					
+g7_34 = input.symbol(title='34', defval='BIST:ALCTL')					
+g7_35 = input.symbol(title='35', defval='BIST:ALFAS')					
+g7_36 = input.symbol(title='36', defval='BIST:ALGYO')					
+g7_37 = input.symbol(title='37', defval='BIST:ALKA')					
+g7_38 = input.symbol(title='38', defval='BIST:ALKIM')					
+g7_39 = input.symbol(title='39', defval='BIST:ALMAD')					
+g7_40 = input.symbol(title='40', defval='BIST:ALARK')					
+
+// ======= GROUP 8 =======
+g8_01 = input.symbol(title='01', defval='BIST:VERUS', group="8. Grup Hisseleri")					
+g8_02 = input.symbol(title='02', defval='BIST:VERTU')					
+g8_03 = input.symbol(title='03', defval='BIST:VESBE')					
+g8_04 = input.symbol(title='04', defval='BIST:YAPRK')					
+g8_05 = input.symbol(title='05', defval='BIST:YATAS')					
+g8_06 = input.symbol(title='06', defval='BIST:YYLGD')					
+g8_07 = input.symbol(title='07', defval='BIST:YEOTK')					
+g8_08 = input.symbol(title='08', defval='BIST:YUNSA')					
+g8_09 = input.symbol(title='09', defval='BIST:ZEDUR')					
+g8_10 = input.symbol(title='10', defval='BIST:XU100')					
+g8_11 = input.symbol(title='11', defval='BIST:VAKBN')					
+g8_12 = input.symbol(title='12', defval='BIST:VESTL')					
+g8_13 = input.symbol(title='13', defval='BIST:VKGYO')					
+g8_14 = input.symbol(title='14', defval='BIST:YKBNK')					
+g8_15 = input.symbol(title='15', defval='BIST:YGGYO')					
+g8_16 = input.symbol(title='16', defval='BIST:YYAPI')					
+g8_17 = input.symbol(title='17', defval='BIST:ZOREN')					
+g8_18 = input.symbol(title='18', defval='BIST:ZRGYO')					
+g8_19 = input.symbol(title='19', defval='BIST:ACSEL')					
+g8_20 = input.symbol(title='20', defval='BIST:ADEL')					
+g8_21 = input.symbol(title='21', defval='BIST:ADESE')					
+g8_22 = input.symbol(title='22', defval='BIST:AFYON')					
+g8_23 = input.symbol(title='23', defval='BIST:AGHOL')					
+g8_24 = input.symbol(title='24', defval='BIST:AKCNS')					
+g8_25 = input.symbol(title='25', defval='BIST:AKFGY')					
+g8_26 = input.symbol(title='26', defval='BIST:AKGRT')					
+g8_27 = input.symbol(title='27', defval='BIST:AKMGY')					
+g8_28 = input.symbol(title='28', defval='BIST:AKSA')					
+g8_29 = input.symbol(title='29', defval='BIST:AKSEN')					
+g8_30 = input.symbol(title='30', defval='BIST:AKSGY')					
+g8_31 = input.symbol(title='31', defval='BIST:ALARK')					
+g8_32 = input.symbol(title='32', defval='BIST:ALBRK')					
+g8_33 = input.symbol(title='33', defval='BIST:ALCAR')					
+g8_34 = input.symbol(title='34', defval='BIST:ALCTL')					
+g8_35 = input.symbol(title='35', defval='BIST:ALFAS')					
+g8_36 = input.symbol(title='36', defval='BIST:ALGYO')					
+g8_37 = input.symbol(title='37', defval='BIST:ALKA')					
+g8_38 = input.symbol(title='38', defval='BIST:ALKIM')					
+g8_39 = input.symbol(title='39', defval='BIST:ALMAD')					
+g8_40 = input.symbol(title='40', defval='BIST:ALARK')	
+
+// ======= GROUP 9 =======
+g9_01 = input.symbol(title='01', defval='BIST:VERUS', group="9. Grup Hisseleri")
+g9_02 = input.symbol(title='02', defval='BIST:VERTU')
+g9_03 = input.symbol(title='03', defval='BIST:VESBE')
+g9_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g9_05 = input.symbol(title='05', defval='BIST:YATAS')
+g9_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g9_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g9_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g9_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g9_10 = input.symbol(title='10', defval='BIST:XU100')
+g9_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g9_12 = input.symbol(title='12', defval='BIST:VESTL')
+g9_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g9_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g9_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g9_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g9_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g9_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g9_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g9_20 = input.symbol(title='20', defval='BIST:ADEL')
+g9_21 = input.symbol(title='21', defval='BIST:ADESE')
+g9_22 = input.symbol(title='22', defval='BIST:AFYON')
+g9_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g9_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g9_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g9_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g9_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g9_28 = input.symbol(title='28', defval='BIST:AKSA')
+g9_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g9_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g9_31 = input.symbol(title='31', defval='BIST:ALARK')
+g9_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g9_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g9_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g9_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g9_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g9_37 = input.symbol(title='37', defval='BIST:ALKA')
+g9_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g9_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g9_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 10 =======
+g10_01 = input.symbol(title='01', defval='BIST:VERUS', group="10. Grup Hisseleri")
+g10_02 = input.symbol(title='02', defval='BIST:VERTU')
+g10_03 = input.symbol(title='03', defval='BIST:VESBE')
+g10_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g10_05 = input.symbol(title='05', defval='BIST:YATAS')
+g10_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g10_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g10_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g10_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g10_10 = input.symbol(title='10', defval='BIST:XU100')
+g10_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g10_12 = input.symbol(title='12', defval='BIST:VESTL')
+g10_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g10_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g10_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g10_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g10_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g10_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g10_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g10_20 = input.symbol(title='20', defval='BIST:ADEL')
+g10_21 = input.symbol(title='21', defval='BIST:ADESE')
+g10_22 = input.symbol(title='22', defval='BIST:AFYON')
+g10_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g10_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g10_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g10_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g10_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g10_28 = input.symbol(title='28', defval='BIST:AKSA')
+g10_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g10_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g10_31 = input.symbol(title='31', defval='BIST:ALARK')
+g10_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g10_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g10_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g10_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g10_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g10_37 = input.symbol(title='37', defval='BIST:ALKA')
+g10_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g10_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g10_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 11 =======
+g11_01 = input.symbol(title='01', defval='BIST:VERUS', group="11. Grup Hisseleri")
+g11_02 = input.symbol(title='02', defval='BIST:VERTU')
+g11_03 = input.symbol(title='03', defval='BIST:VESBE')
+g11_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g11_05 = input.symbol(title='05', defval='BIST:YATAS')
+g11_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g11_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g11_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g11_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g11_10 = input.symbol(title='10', defval='BIST:XU100')
+g11_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g11_12 = input.symbol(title='12', defval='BIST:VESTL')
+g11_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g11_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g11_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g11_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g11_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g11_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g11_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g11_20 = input.symbol(title='20', defval='BIST:ADEL')
+g11_21 = input.symbol(title='21', defval='BIST:ADESE')
+g11_22 = input.symbol(title='22', defval='BIST:AFYON')
+g11_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g11_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g11_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g11_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g11_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g11_28 = input.symbol(title='28', defval='BIST:AKSA')
+g11_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g11_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g11_31 = input.symbol(title='31', defval='BIST:ALARK')
+g11_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g11_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g11_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g11_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g11_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g11_37 = input.symbol(title='37', defval='BIST:ALKA')
+g11_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g11_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g11_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 12 =======
+g12_01 = input.symbol(title='01', defval='BIST:VERUS', group="12. Grup Hisseleri")
+g12_02 = input.symbol(title='02', defval='BIST:VERTU')
+g12_03 = input.symbol(title='03', defval='BIST:VESBE')
+g12_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g12_05 = input.symbol(title='05', defval='BIST:YATAS')
+g12_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g12_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g12_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g12_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g12_10 = input.symbol(title='10', defval='BIST:XU100')
+g12_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g12_12 = input.symbol(title='12', defval='BIST:VESTL')
+g12_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g12_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g12_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g12_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g12_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g12_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g12_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g12_20 = input.symbol(title='20', defval='BIST:ADEL')
+g12_21 = input.symbol(title='21', defval='BIST:ADESE')
+g12_22 = input.symbol(title='22', defval='BIST:AFYON')
+g12_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g12_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g12_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g12_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g12_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g12_28 = input.symbol(title='28', defval='BIST:AKSA')
+g12_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g12_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g12_31 = input.symbol(title='31', defval='BIST:ALARK')
+g12_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g12_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g12_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g12_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g12_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g12_37 = input.symbol(title='37', defval='BIST:ALKA')
+g12_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g12_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g12_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 13 =======
+g13_01 = input.symbol(title='01', defval='BIST:VERUS', group="13. Grup Hisseleri")
+g13_02 = input.symbol(title='02', defval='BIST:VERTU')
+g13_03 = input.symbol(title='03', defval='BIST:VESBE')
+g13_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g13_05 = input.symbol(title='05', defval='BIST:YATAS')
+g13_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g13_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g13_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g13_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g13_10 = input.symbol(title='10', defval='BIST:XU100')
+g13_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g13_12 = input.symbol(title='12', defval='BIST:VESTL')
+g13_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g13_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g13_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g13_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g13_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g13_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g13_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g13_20 = input.symbol(title='20', defval='BIST:ADEL')
+g13_21 = input.symbol(title='21', defval='BIST:ADESE')
+g13_22 = input.symbol(title='22', defval='BIST:AFYON')
+g13_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g13_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g13_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g13_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g13_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g13_28 = input.symbol(title='28', defval='BIST:AKSA')
+g13_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g13_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g13_31 = input.symbol(title='31', defval='BIST:ALARK')
+g13_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g13_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g13_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g13_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g13_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g13_37 = input.symbol(title='37', defval='BIST:ALKA')
+g13_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g13_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g13_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 14 =======
+g14_01 = input.symbol(title='01', defval='BIST:VERUS', group="14. Grup Hisseleri")
+g14_02 = input.symbol(title='02', defval='BIST:VERTU')
+g14_03 = input.symbol(title='03', defval='BIST:VESBE')
+g14_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g14_05 = input.symbol(title='05', defval='BIST:YATAS')
+g14_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g14_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g14_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g14_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g14_10 = input.symbol(title='10', defval='BIST:XU100')
+g14_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g14_12 = input.symbol(title='12', defval='BIST:VESTL')
+g14_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g14_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g14_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g14_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g14_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g14_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g14_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g14_20 = input.symbol(title='20', defval='BIST:ADEL')
+g14_21 = input.symbol(title='21', defval='BIST:ADESE')
+g14_22 = input.symbol(title='22', defval='BIST:AFYON')
+g14_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g14_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g14_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g14_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g14_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g14_28 = input.symbol(title='28', defval='BIST:AKSA')
+g14_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g14_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g14_31 = input.symbol(title='31', defval='BIST:ALARK')
+g14_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g14_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g14_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g14_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g14_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g14_37 = input.symbol(title='37', defval='BIST:ALKA')
+g14_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g14_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g14_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+// ======= GROUP 15 =======
+g15_01 = input.symbol(title='01', defval='BIST:VERUS', group="15. Grup Hisseleri")
+g15_02 = input.symbol(title='02', defval='BIST:VERTU')
+g15_03 = input.symbol(title='03', defval='BIST:VESBE')
+g15_04 = input.symbol(title='04', defval='BIST:YAPRK')
+g15_05 = input.symbol(title='05', defval='BIST:YATAS')
+g15_06 = input.symbol(title='06', defval='BIST:YYLGD')
+g15_07 = input.symbol(title='07', defval='BIST:YEOTK')
+g15_08 = input.symbol(title='08', defval='BIST:YUNSA')
+g15_09 = input.symbol(title='09', defval='BIST:ZEDUR')
+g15_10 = input.symbol(title='10', defval='BIST:XU100')
+g15_11 = input.symbol(title='11', defval='BIST:VAKBN')
+g15_12 = input.symbol(title='12', defval='BIST:VESTL')
+g15_13 = input.symbol(title='13', defval='BIST:VKGYO')
+g15_14 = input.symbol(title='14', defval='BIST:YKBNK')
+g15_15 = input.symbol(title='15', defval='BIST:YGGYO')
+g15_16 = input.symbol(title='16', defval='BIST:YYAPI')
+g15_17 = input.symbol(title='17', defval='BIST:ZOREN')
+g15_18 = input.symbol(title='18', defval='BIST:ZRGYO')
+g15_19 = input.symbol(title='19', defval='BIST:ACSEL')
+g15_20 = input.symbol(title='20', defval='BIST:ADEL')
+g15_21 = input.symbol(title='21', defval='BIST:ADESE')
+g15_22 = input.symbol(title='22', defval='BIST:AFYON')
+g15_23 = input.symbol(title='23', defval='BIST:AGHOL')
+g15_24 = input.symbol(title='24', defval='BIST:AKCNS')
+g15_25 = input.symbol(title='25', defval='BIST:AKFGY')
+g15_26 = input.symbol(title='26', defval='BIST:AKGRT')
+g15_27 = input.symbol(title='27', defval='BIST:AKMGY')
+g15_28 = input.symbol(title='28', defval='BIST:AKSA')
+g15_29 = input.symbol(title='29', defval='BIST:AKSEN')
+g15_30 = input.symbol(title='30', defval='BIST:AKSGY')
+g15_31 = input.symbol(title='31', defval='BIST:ALARK')
+g15_32 = input.symbol(title='32', defval='BIST:ALBRK')
+g15_33 = input.symbol(title='33', defval='BIST:ALCAR')
+g15_34 = input.symbol(title='34', defval='BIST:ALCTL')
+g15_35 = input.symbol(title='35', defval='BIST:ALFAS')
+g15_36 = input.symbol(title='36', defval='BIST:ALGYO')
+g15_37 = input.symbol(title='37', defval='BIST:ALKA')
+g15_38 = input.symbol(title='38', defval='BIST:ALKIM')
+g15_39 = input.symbol(title='39', defval='BIST:ALMAD')
+g15_40 = input.symbol(title='40', defval='BIST:ALARK')
+
+
+
+
+
+// Select the active group symbols
+a01 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a02 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a03 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a04 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a05 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a06 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a07 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a08 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a09 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a10 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a11 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a12 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a13 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a14 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a15 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a16 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a17 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a18 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a19 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a20 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a21 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a22 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a23 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a24 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a25 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a26 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a27 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a28 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a29 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a30 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a31 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a32 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a33 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a34 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a35 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a36 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a37 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a38 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a39 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+a40 = gurupSec == '1' ? g1_01 : gurupSec == '2' ? g2_01 : gurupSec == '3' ? g3_01 : gurupSec == '4' ? g4_01 : gurupSec == '5' ? g5_01 : gurupSec == '6' ? g6_01 : gurupSec == '7' ? g7_01 : gurupSec == '8' ? g8_01 : gurupSec == '9' ? g9_01 : gurupSec == '10' ? g10_01 : gurupSec == '11' ? g11_01 : gurupSec == '12' ? g12_01 : gurupSec == '13' ? g13_01 : gurupSec == '14' ? g14_01 : gurupSec == '15' ? g15_01 : na
+
+
+// Continue this pattern for all 40 symbols in each group (a03 to a40)
+
+// Request security data for each symbol
+[v01, s01] = request.security(a01, per, func())
+[v02, s02] = request.security(a02, per, func())
+[v03, s03] = request.security(a03, per, func())
+[v04, s04] = request.security(a04, per, func())
+[v05, s05] = request.security(a05, per, func())
+[v06, s06] = request.security(a06, per, func())
+[v07, s07] = request.security(a07, per, func())
+[v08, s08] = request.security(a08, per, func())
+[v09, s09] = request.security(a09, per, func())
+[v10, s10] = request.security(a10, per, func())
+[v11, s11] = request.security(a11, per, func())
+[v12, s12] = request.security(a12, per, func())
+[v13, s13] = request.security(a13, per, func())
+[v14, s14] = request.security(a14, per, func())
+[v15, s15] = request.security(a15, per, func())
+[v16, s16] = request.security(a16, per, func())
+[v17, s17] = request.security(a17, per, func())
+[v18, s18] = request.security(a18, per, func())
+[v19, s19] = request.security(a19, per, func())
+[v20, s20] = request.security(a20, per, func())
+[v21, s21] = request.security(a21, per, func())
+[v22, s22] = request.security(a22, per, func())
+[v23, s23] = request.security(a23, per, func())
+[v24, s24] = request.security(a24, per, func())
+[v25, s25] = request.security(a25, per, func())
+[v26, s26] = request.security(a26, per, func())
+[v27, s27] = request.security(a27, per, func())
+[v28, s28] = request.security(a28, per, func())
+[v29, s29] = request.security(a29, per, func())
+[v30, s30] = request.security(a30, per, func())
+[v31, s31] = request.security(a31, per, func())
+[v32, s32] = request.security(a32, per, func())
+[v33, s33] = request.security(a33, per, func())
+[v34, s34] = request.security(a34, per, func())
+[v35, s35] = request.security(a35, per, func())
+[v36, s36] = request.security(a36, per, func())
+[v37, s37] = request.security(a37, per, func())
+[v38, s38] = request.security(a38, per, func())
+[v39, s39] = request.security(a39, per, func())
+[v40, s40] = request.security(a40, per, func())
+
+
+
+// ... continue for all 40 symbols
+
+// Rounding function
+roundn(x, n) =>
+    mult = 1
+    if n != 0
+        for i = 1 to math.abs(n) by 1
+            mult *= 10
+    n >= 0 ? math.round(x * mult) / mult : math.round(x / mult) * mult
+
+// Build the scan label
+scr_label = 'RSI VE KOMBİNE KIRILIM\n'
+scr_label := s01 ? scr_label + syminfo.ticker(a01) + ' ' + str.tostring(roundn(v01, 2)) + '\n' : scr_label
+scr_label := s02 ? scr_label + syminfo.ticker(a02) + ' ' + str.tostring(roundn(v02, 2)) + '\n' : scr_label
+scr_label := s03 ? scr_label + syminfo.ticker(a03) + ' ' + str.tostring(roundn(v03, 2)) + '\n' : scr_label
+scr_label := s04 ? scr_label + syminfo.ticker(a04) + ' ' + str.tostring(roundn(v04, 2)) + '\n' : scr_label
+scr_label := s05 ? scr_label + syminfo.ticker(a05) + ' ' + str.tostring(roundn(v05, 2)) + '\n' : scr_label
+scr_label := s06 ? scr_label + syminfo.ticker(a06) + ' ' + str.tostring(roundn(v06, 2)) + '\n' : scr_label
+scr_label := s07 ? scr_label + syminfo.ticker(a07) + ' ' + str.tostring(roundn(v07, 2)) + '\n' : scr_label
+scr_label := s08 ? scr_label + syminfo.ticker(a08) + ' ' + str.tostring(roundn(v08, 2)) + '\n' : scr_label
+scr_label := s09 ? scr_label + syminfo.ticker(a09) + ' ' + str.tostring(roundn(v09, 2)) + '\n' : scr_label
+scr_label := s10 ? scr_label + syminfo.ticker(a10) + ' ' + str.tostring(roundn(v10, 2)) + '\n' : scr_label
+scr_label := s11 ? scr_label + syminfo.ticker(a11) + ' ' + str.tostring(roundn(v11, 2)) + '\n' : scr_label
+scr_label := s12 ? scr_label + syminfo.ticker(a12) + ' ' + str.tostring(roundn(v12, 2)) + '\n' : scr_label
+scr_label := s13 ? scr_label + syminfo.ticker(a13) + ' ' + str.tostring(roundn(v13, 2)) + '\n' : scr_label
+scr_label := s14 ? scr_label + syminfo.ticker(a14) + ' ' + str.tostring(roundn(v14, 2)) + '\n' : scr_label
+scr_label := s15 ? scr_label + syminfo.ticker(a15) + ' ' + str.tostring(roundn(v15, 2)) + '\n' : scr_label
+scr_label := s16 ? scr_label + syminfo.ticker(a16) + ' ' + str.tostring(roundn(v16, 2)) + '\n' : scr_label
+scr_label := s17 ? scr_label + syminfo.ticker(a17) + ' ' + str.tostring(roundn(v17, 2)) + '\n' : scr_label
+scr_label := s18 ? scr_label + syminfo.ticker(a18) + ' ' + str.tostring(roundn(v18, 2)) + '\n' : scr_label
+scr_label := s19 ? scr_label + syminfo.ticker(a19) + ' ' + str.tostring(roundn(v19, 2)) + '\n' : scr_label
+scr_label := s20 ? scr_label + syminfo.ticker(a20) + ' ' + str.tostring(roundn(v20, 2)) + '\n' : scr_label
+scr_label := s21 ? scr_label + syminfo.ticker(a21) + ' ' + str.tostring(roundn(v21, 2)) + '\n' : scr_label
+scr_label := s22 ? scr_label + syminfo.ticker(a22) + ' ' + str.tostring(roundn(v22, 2)) + '\n' : scr_label
+scr_label := s23 ? scr_label + syminfo.ticker(a23) + ' ' + str.tostring(roundn(v23, 2)) + '\n' : scr_label
+scr_label := s24 ? scr_label + syminfo.ticker(a24) + ' ' + str.tostring(roundn(v24, 2)) + '\n' : scr_label
+scr_label := s25 ? scr_label + syminfo.ticker(a25) + ' ' + str.tostring(roundn(v25, 2)) + '\n' : scr_label
+scr_label := s26 ? scr_label + syminfo.ticker(a26) + ' ' + str.tostring(roundn(v26, 2)) + '\n' : scr_label
+scr_label := s27 ? scr_label + syminfo.ticker(a27) + ' ' + str.tostring(roundn(v27, 2)) + '\n' : scr_label
+scr_label := s28 ? scr_label + syminfo.ticker(a28) + ' ' + str.tostring(roundn(v28, 2)) + '\n' : scr_label
+scr_label := s29 ? scr_label + syminfo.ticker(a29) + ' ' + str.tostring(roundn(v29, 2)) + '\n' : scr_label
+scr_label := s30 ? scr_label + syminfo.ticker(a30) + ' ' + str.tostring(roundn(v30, 2)) + '\n' : scr_label
+scr_label := s31 ? scr_label + syminfo.ticker(a31) + ' ' + str.tostring(roundn(v31, 2)) + '\n' : scr_label
+scr_label := s32 ? scr_label + syminfo.ticker(a32) + ' ' + str.tostring(roundn(v32, 2)) + '\n' : scr_label
+scr_label := s33 ? scr_label + syminfo.ticker(a33) + ' ' + str.tostring(roundn(v33, 2)) + '\n' : scr_label
+scr_label := s34 ? scr_label + syminfo.ticker(a34) + ' ' + str.tostring(roundn(v34, 2)) + '\n' : scr_label
+scr_label := s35 ? scr_label + syminfo.ticker(a35) + ' ' + str.tostring(roundn(v35, 2)) + '\n' : scr_label
+scr_label := s36 ? scr_label + syminfo.ticker(a36) + ' ' + str.tostring(roundn(v36, 2)) + '\n' : scr_label
+scr_label := s37 ? scr_label + syminfo.ticker(a37) + ' ' + str.tostring(roundn(v37, 2)) + '\n' : scr_label
+scr_label := s38 ? scr_label + syminfo.ticker(a38) + ' ' + str.tostring(roundn(v38, 2)) + '\n' : scr_label
+scr_label := s39 ? scr_label + syminfo.ticker(a39) + ' ' + str.tostring(roundn(v39, 2)) + '\n' : scr_label
+scr_label := s40 ? scr_label + syminfo.ticker(a40) + ' ' + str.tostring(roundn(v40, 2)) + '\n' : scr_label
+
+// ... continue for all 40 symbols
+
+// Create the table
+var panel = table.new(position = position.top_right, columns = 10, rows = 10, bgcolor = color.green, frame_color = color.white, border_color = color.red)
+
+if barstate.islast
+    table.cell(panel, 0, 0, text = str.tostring(scr_label))
